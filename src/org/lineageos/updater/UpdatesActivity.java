@@ -174,7 +174,8 @@ public class UpdatesActivity extends UpdatesListActivity {
                 public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
                     int scrollRange = appBarLayout.getTotalScrollRange();
                     if (!mIsShown && scrollRange + verticalOffset < 10) {
-                        collapsingToolbar.setTitle(getString(R.string.display_name));
+                        collapsingToolbar.setTitle(getString(R.string.header_title_text,
+                                BuildInfoUtils.getBuildVersion()));
                         mIsShown = true;
                     } else if (mIsShown && scrollRange + verticalOffset > 100) {
                         collapsingToolbar.setTitle(null);
