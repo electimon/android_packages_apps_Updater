@@ -41,6 +41,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -153,6 +154,9 @@ public class UpdatesActivity extends UpdatesListActivity {
         headerTitle.setText(getString(R.string.header_title_text,
                 BuildInfoUtils.getBuildVersion()));
 
+        ImageButton refreshBtn = findViewById(R.id.refreshbtn);
+        refreshBtn.setOnClickListener(v -> downloadUpdatesList(true));
+
         updateLastCheckedString();
 
         TextView headerBuildVersion = findViewById(R.id.header_build_version);
@@ -232,10 +236,7 @@ public class UpdatesActivity extends UpdatesListActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-        if (itemId == R.id.menu_refresh) {
-            downloadUpdatesList(true);
-            return true;
-        } else if (itemId == R.id.menu_preferences) {
+        if (itemId == R.id.menu_preferences) {
             showPreferencesDialog();
             return true;
         } else if (itemId == R.id.menu_show_changelog) {
@@ -451,7 +452,7 @@ public class UpdatesActivity extends UpdatesListActivity {
     private void refreshAnimationStart() {
         if (!mIsTV) {
             if (mRefreshIconView == null) {
-                mRefreshIconView = findViewById(R.id.menu_refresh);
+                mRefreshIconView = findViewById(R.id.refreshbtn);
             }
             if (mRefreshIconView != null) {
                 mRefreshAnimation.setRepeatCount(Animation.INFINITE);
