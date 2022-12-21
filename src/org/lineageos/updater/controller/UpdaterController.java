@@ -547,9 +547,9 @@ public class UpdaterController {
     }
 
     public void setPerformanceMode(boolean enable) {
-        if (!Utils.isABDevice()) {
+        /*if (!Utils.isABDevice()) {
             return;
         }
-        ABUpdateInstaller.getInstance(mContext, this).setPerformanceMode(enable);
+        ABUpdateInstaller.getInstance(mContext, this).setPerformanceMode(enable);*/
     }
 }

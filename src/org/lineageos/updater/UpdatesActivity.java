@@ -542,10 +542,10 @@ public class UpdatesActivity extends UpdatesListActivity {
                         UpdatesCheckReceiver.cancelUpdatesCheck(this);
                     }
 
-                    if (Utils.isABDevice()) {
+                    /*if (Utils.isABDevice()) {
                         boolean enableABPerfMode = abPerfMode.isChecked();
                         mUpdaterService.getUpdaterController().setPerformanceMode(enableABPerfMode);
-                    }
+                    }*/
                     if (Utils.isRecoveryUpdateExecPresent()) {
                         boolean enableRecoveryUpdate = updateRecovery.isChecked();
                         SystemProperties.set(Constants.UPDATE_RECOVERY_PROPERTY,

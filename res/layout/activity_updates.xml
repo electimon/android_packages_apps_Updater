@@ -15,7 +15,7 @@
         android:outlineAmbientShadowColor="@android:color/transparent"
         android:outlineSpotShadowColor="@android:color/transparent"
         android:background="?android:attr/colorPrimary"
-        android:theme="@style/Theme.CollapsingToolbar.Settings">
+        android:theme="@style/Widget.Design.CollapsingToolbar">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/collapsing_toolbar"
@@ -28,13 +28,9 @@
             app:maxLines="3"
             app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
             app:scrimAnimationDuration="50"
-            app:scrimVisibleHeightTrigger="@dimen/settingslib_scrim_visible_height_trigger"
             app:statusBarScrim="@null"
             app:titleCollapseMode="fade"
-            app:collapsedTitleTextAppearance="@style/CollapsingToolbarTitle.Collapsed"
-            app:expandedTitleTextAppearance="@style/CollapsingToolbarTitle.Expanded"
-            app:expandedTitleMarginStart="@dimen/expanded_title_margin_start"
-            app:expandedTitleMarginEnd="@dimen/expanded_title_margin_end"
+            app:expandedTitleTextAppearance="@style/TextAppearance.Design.CollapsingToolbar.Expanded"
             app:toolbarId="@id/action_bar">
 
             <RelativeLayout
