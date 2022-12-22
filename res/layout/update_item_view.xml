@@ -124,8 +124,8 @@
             <ImageButton
                 android:id="@+id/update_menu"
                 style="?android:attr/actionOverflowButtonStyle"
-                android:layout_width="40dp"
-                android:layout_height="36dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="end"
                 android:contentDescription="@null"
                 android:padding="8dp" />
@@ -133,8 +133,8 @@
             <Button
                 android:id="@id/update_action"
                 style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                android:layout_width="40dp"
-                android:layout_height="33dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:foreground="@drawable/ic_pause"
                 android:padding="8dp" />
         </LinearLayout>

@@ -7,7 +7,7 @@ allprojects {
     gradle.projectsEvaluated {
         tasks.withType(JavaCompile) {
             Set<File> fileSet = options.bootstrapClasspath.getFiles()
-            List<File> newFileList = new ArrayList<>();
+            List<File> newFileList = new ArrayList<>()
             newFileList.add(new File("./system_libs/framework.jar"))
             newFileList.add(new File("./system_libs/classes.jar"))
             newFileList.add(new File("./system_libs/classes2.jar"))
@@ -39,11 +39,11 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 33
 
     defaultConfig {
-        minSdkVersion 27
-        targetSdkVersion 31
+        minSdkVersion 31
+        targetSdkVersion 33
     }
 
 
