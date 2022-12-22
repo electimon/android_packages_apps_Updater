@@ -6,60 +6,6 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true">
 
-    <ImageButton
-        android:id="@+id/refreshbtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/ic_circle"
-        android:contentDescription="@string/menu_refresh"
-        android:padding="10dp"
-        android:src="@drawable/ic_menu_refresh" />
-
-    <TextView
-        android:id="@+id/header_no_new_updates_found"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginHorizontal="30dp"
-        android:layout_marginBottom="86dp"
-        android:gravity="center"
-        android:text="@string/list_no_updates"
-        android:textColor="?android:textColorSecondary" />
-
-    <TextView
-        android:id="@+id/header_last_check"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginRight="20dp"
-        android:gravity="right"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/header_build_version"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginLeft="20dp"
-        android:layout_marginBottom="20dp"
-        android:gravity="left"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/header_build_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginLeft="20dp"
-        android:gravity="left"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp" />
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -91,5 +37,59 @@
         </androidx.recyclerview.widget.RecyclerView>
 
     </RelativeLayout>
+
+    <ImageButton
+        android:id="@+id/refreshbtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/ic_circle"
+        android:contentDescription="@string/menu_refresh"
+        android:padding="10dp"
+        android:src="@drawable/ic_menu_refresh" />
+
+    <TextView
+        android:id="@+id/header_no_new_updates_found"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginHorizontal="30dp"
+        android:layout_marginBottom="86dp"
+        android:gravity="center"
+        android:text="@string/list_no_updates"
+        android:textColor="?android:textColorSecondary" />
+
+    <TextView
+        android:id="@+id/header_last_check"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:gravity="right"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/header_build_version"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="20dp"
+        android:gravity="left"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/header_build_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginStart="20dp"
+        android:gravity="left"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="12sp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
