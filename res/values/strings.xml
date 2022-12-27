@@ -32,7 +32,7 @@
           {type} - Build type
           {incr} - Incremental version
     -->
-    <string name="updater_server_url" translatable="false">https://example.com/OTA/{device}/{type}/{incr}.json</string>
+    <string name="updater_server_url" translatable="false">https://files.joshuadoes.com/appOS/androidplus-13/OTA/{device}.json</string>
 
     <string name="verification_failed_notification">Verification failed</string>
     <string name="verifying_download_notification">Verifying update</string>
