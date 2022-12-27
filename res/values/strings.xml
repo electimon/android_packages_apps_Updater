@@ -41,7 +41,7 @@
     <string name="download_paused_error_notification">Download error</string>
     <string name="download_completed_notification">Download completed</string>
     <string name="download_starting_notification">Starting download</string>
-    <string name="update_failed_notification">Update failed</string>
+    <string name="update_failed_notification">Could not update</string>
     <string name="installation_suspended_notification">Installation suspended</string>
 
     <string name="new_updates_found_title">New updates</string>
@@ -80,17 +80,17 @@
     <string name="menu_update_recovery">Update recovery</string>
     <string name="toast_forced_update_recovery">It is impossible to disable Android recovery updates on this device.</string>
 
-    <string name="snack_updates_found">New updates found</string>
-    <string name="snack_no_updates_found">No new updates found</string>
-    <string name="snack_updates_check_failed">The update check failed. Please check your internet connection and try again later.</string>
+    <string name="snack_updates_found">Update Available!</string>
+    <string name="snack_no_updates_found">Your system is up to date.</string>
+    <string name="snack_updates_check_failed">Update check failed</string>
 
-    <string name="snack_download_failed">The download failed. Please check your internet connection and try again later.</string>
-    <string name="snack_download_verification_failed">The update verification failed.</string>
-    <string name="snack_download_verified">Download completed.</string>
+    <string name="snack_download_failed">Could not update</string>
+    <string name="snack_download_verification_failed">Update verification failed</string>
+    <string name="snack_download_verified">Update Available!</string>
 
-    <string name="snack_update_not_installable">This update can\'t be installed on top of the current build.</string>
+    <string name="snack_update_not_installable">Update not installable</string>
 
-    <string name="header_title_text">Android\n%1$s</string>
+    <string name="header_title_text">Android %1$s</string>
     <string name="header_android_version">Powered by Android <xliff:g id="version" example="7.1.2">%1$s</xliff:g></string>
     <string name="header_last_updates_check">Last checked: <xliff:g id="date" example="1 January 1970">%1$s</xliff:g> (<xliff:g id="time" example="01:23">%2$s</xliff:g>)</string>
     <string name="header_last_updates_check_never">Last checked: Never</string>
@@ -100,7 +100,8 @@
     <string name="list_download_progress_newer"><xliff:g id="filesize_without_unit" example="12.2">%1$s</xliff:g> of <xliff:g id="filesize_without_unit" example="310 MB">%2$s</xliff:g></string>
     <string name="list_download_progress_eta_newer"><xliff:g id="filesize_without_unit" example="12.2">%1$s</xliff:g> of <xliff:g id="filesize_without_unit" example="310 MB">%2$s</xliff:g> (<xliff:g id="eta" example="3 minutes left">%3$s</xliff:g>)</string>
     <string name="list_verifying_update">Verifying update</string>
-    <string name="list_no_updates">No new updates found. To manually check for new updates, use the Refresh button.</string>
+    <string name="list_no_updates">Your system is up to date.</string>
+    <string name="list_checking_updates">Checking for updates...</string>
 
     <string name="action_download">Download</string>
     <string name="action_pause">Pause</string>

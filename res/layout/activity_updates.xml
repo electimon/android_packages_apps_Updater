@@ -15,21 +15,30 @@
         app:layout_collapseMode="none">
 
         <TextView
+            android:id="@+id/header_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/header_rom"
+            android:gravity="center"
+            android:paddingTop="30dp"
+            android:text="@string/list_no_updates"
+            android:textColor="@color/theme_accent3"
+            android:textSize="30sp" />
+
+        <TextView
             android:id="@+id/header_rom"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="60dp"
             android:gravity="center"
             android:textColor="@color/theme_accent2"
-            android:textSize="60sp" />
+            android:textSize="52sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/header_rom"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
+            android:layout_height="match_parent"
+            android:layout_below="@id/header_status"
+            android:layout_marginBottom="30dp"
             android:clipToPadding="false"
             android:scrollbars="vertical"
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
@@ -42,42 +51,22 @@
         android:id="@+id/refreshbtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="20dp"
+        android:layout_gravity="end"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="30dp"
         android:background="@drawable/ic_circle"
         android:contentDescription="@string/menu_refresh"
         android:padding="10dp"
         android:src="@drawable/ic_menu_refresh" />
 
     <TextView
-        android:id="@+id/header_no_new_updates_found"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginHorizontal="30dp"
-        android:layout_marginBottom="86dp"
-        android:gravity="center"
-        android:text="@string/list_no_updates"
-        android:textColor="?android:textColorSecondary" />
-
-    <TextView
-        android:id="@+id/header_last_check"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:gravity="right"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="12sp" />
-
-    <TextView
         android:id="@+id/header_build_version"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginStart="20dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="40dp"
         android:gravity="left"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="12sp" />
@@ -87,8 +76,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
         android:gravity="left"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/header_last_check"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_marginTop="60dp"
+        android:gravity="center"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="12sp" />
 

@@ -159,7 +159,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
 
         final String downloadId = update.getDownloadId();
         if (mUpdaterController.isDownloading(downloadId)) {
-            canDelete = true;
+            //canDelete = true;
             String downloaded = Formatter.formatShortFileSize(mActivity,
                     update.getFile().length());
             String total = Formatter.formatShortFileSize(mActivity, update.getFileSize());
@@ -193,8 +193,8 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             viewHolder.mProgressBar.setIndeterminate(true);
         } else {
             canDelete = true;
-            setButtonAction(viewHolder.mAction, Action.RESUME, downloadId, !isBusy());
-            String downloaded = Formatter.formatShortFileSize(mActivity,
+            setButtonAction(viewHolder.mAction, Action.DOWNLOAD, downloadId, !isBusy());
+            /*String downloaded = Formatter.formatShortFileSize(mActivity,
                     update.getFile().length());
             String total = Formatter.formatShortFileSize(mActivity, update.getFileSize());
             String percentage = NumberFormat.getPercentInstance().format(
@@ -203,13 +203,19 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             viewHolder.mProgressText.setText(mActivity.getString(
                     R.string.list_download_progress_newer, downloaded, total));
             viewHolder.mProgressBar.setIndeterminate(false);
-            viewHolder.mProgressBar.setProgress(update.getProgress());
+            viewHolder.mProgressBar.setProgress(update.getProgress());*/
         }
 
-        viewHolder.mMenu.setOnClickListener(getClickListener(update, canDelete, viewHolder.mMenu));
-        viewHolder.mProgress.setVisibility(View.VISIBLE);
-        viewHolder.mProgressText.setVisibility(View.VISIBLE);
-        viewHolder.mBuildSize.setVisibility(View.GONE);
+        if (canDelete) {
+            viewHolder.mProgress.setVisibility(View.GONE);
+            viewHolder.mProgressText.setVisibility(View.GONE);
+            viewHolder.mBuildSize.setVisibility(View.VISIBLE);
+        } else {
+            viewHolder.mMenu.setOnClickListener(getClickListener(update, false, viewHolder.mMenu));
+            viewHolder.mProgress.setVisibility(View.VISIBLE);
+            viewHolder.mProgressText.setVisibility(View.VISIBLE);
+            viewHolder.mBuildSize.setVisibility(View.GONE);
+        }
     }
 
     private void handleNotActiveStatus(ViewHolder viewHolder, UpdateInfo update) {

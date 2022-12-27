@@ -3,12 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
     android:nextFocusRight="@+id/update_action"
-    app:cardBackgroundColor="@color/theme_primary"
-    app:contentPadding="8dp">
+    app:cardBackgroundColor="@color/tv_card_background">
+
+    <Button
+        android:id="@id/update_action"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:textColor="@color/theme_accent3"
+        android:textSize="14sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,64 +26,57 @@
         android:weightSum="1">
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
             android:orientation="vertical">
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/build_version"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_height="wrap_content"
+                android:alpha="0.87"
+                android:gravity="center"
+                android:maxLines="2"
+                android:textColor="@color/theme_accent"
+                android:textSize="30sp"
+                tools:text="LineageOS 15.1" />
 
-                <TextView
-                    android:id="@+id/build_version"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:alpha="0.87"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:textSize="16sp"
-                    tools:text="LineageOS 15.1" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/build_date"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:textSize="14sp"
-                        tools:text="29 February 2018" />
-
-                    <TextView
-                        android:id="@+id/build_size"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:singleLine="true"
-                        android:visibility="visible"
-                        tools:text="300 MB" />
-                </LinearLayout>
-            </LinearLayout>
+            <TextView
+                android:id="@+id/build_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:maxLines="1"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textSize="14sp"
+                tools:text="29 February 2018" />
 
             <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp">
+                android:id="@+id/progress_relative"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="50dp"
+                android:gravity="bottom">
+
+                <TextView
+                    android:id="@+id/build_size"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/progress_layout"
+                    android:gravity="end"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:singleLine="true"
+                    android:visibility="visible"
+                    tools:text="300 MB" />
 
                 <LinearLayout
                     android:id="@+id/progress"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="bottom"
                     android:visibility="invisible"
                     tools:visibility="visible">
 
@@ -85,7 +86,9 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:paddingStart="8dp"
                         android:paddingTop="4sp"
+                        android:paddingEnd="8dp"
                         tools:progress="65" />
 
                     <TextView
@@ -100,16 +103,17 @@
 
                 <LinearLayout
                     android:id="@+id/progress_layout"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/progress"
                     android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/progress_text"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:ellipsize="marquee"
+                        android:gravity="center"
                         android:singleLine="true"
                         android:visibility="invisible"
                         tools:text="162 of 300 MB (3 minutes left)"
@@ -118,6 +122,7 @@
                 </LinearLayout>
 
             </RelativeLayout>
+
         </LinearLayout>
 
     </LinearLayout>
@@ -136,16 +141,6 @@
             android:contentDescription="@null"
             android:padding="8dp"
             android:visibility="gone" />
-
-        <Button
-            android:id="@id/update_action"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:backgroundTint="@color/theme_accent"
-            android:textColor="@color/theme_accent2"
-            android:textSize="14dp" />
 
     </LinearLayout>
 

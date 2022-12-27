@@ -26,6 +26,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.icu.text.DateFormat;
 import android.net.Uri;
 import android.os.Build;
@@ -45,6 +46,7 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.cardview.widget.CardView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -168,6 +170,9 @@ public class UpdatesActivity extends UpdatesListActivity {
             findViewById(R.id.refresh).setOnClickListener(v -> downloadUpdatesList(true));
             findViewById(R.id.preferences).setOnClickListener(v -> showPreferencesDialog());
         }
+
+        //Do an automatic update check every startup
+        downloadUpdatesList(false);
     }
 
     @Override
@@ -242,30 +247,30 @@ public class UpdatesActivity extends UpdatesListActivity {
 
     private void loadUpdatesList(File jsonFile, boolean manualRefresh)
             throws IOException, JSONException {
+        if (mUpdaterService == null) {
+            return; //Make sure the updater service is ready first
+        }
         Log.d(TAG, "Adding remote updates");
         UpdaterController controller = mUpdaterService.getUpdaterController();
-        boolean newUpdates = false;
 
         List<UpdateInfo> updates = Utils.parseJson(jsonFile, true);
         List<String> updatesOnline = new ArrayList<>();
         for (UpdateInfo update : updates) {
-            newUpdates |= controller.addUpdate(update);
+            controller.addUpdate(update);
             updatesOnline.add(update.getDownloadId());
         }
         controller.setUpdatesAvailableOnline(updatesOnline, true);
 
-        if (manualRefresh) {
-            showSnackbar(
-                    newUpdates ? R.string.snack_updates_found : R.string.snack_no_updates_found,
-                    Snackbar.LENGTH_SHORT);
-        }
-
         List<String> updateIds = new ArrayList<>();
         List<UpdateInfo> sortedUpdates = controller.getUpdates();
         if (sortedUpdates.isEmpty()) {
+            showSnackbar(R.string.snack_no_updates_found, Snackbar.LENGTH_SHORT);
             findViewById(R.id.recycler_view).setVisibility(View.GONE);
+            findViewById(R.id.refreshbtn).setVisibility(View.VISIBLE);
         } else {
+            showSnackbar(R.string.snack_updates_found, Snackbar.LENGTH_SHORT);
             findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
+            findViewById(R.id.refreshbtn).setVisibility(View.GONE);
             sortedUpdates.sort((u1, u2) -> Long.compare(u2.getTimestamp(), u1.getTimestamp()));
             for (UpdateInfo update : sortedUpdates) {
                 updateIds.add(update.getDownloadId());
@@ -411,8 +416,8 @@ public class UpdatesActivity extends UpdatesListActivity {
 
     @Override
     public void showSnackbar(int stringId, int duration) {
-        TextView headerLastChecked = findViewById(R.id.header_no_new_updates_found);
-        headerLastChecked.setText(getString(stringId));
+        TextView headerStatus = findViewById(R.id.header_status);
+        headerStatus.setText(getString(stringId));
     }
 
     private void refreshAnimationStart() {
