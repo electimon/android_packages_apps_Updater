@@ -26,7 +26,6 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="30dp"
         android:layout_marginBottom="30dp"
-        android:alpha="0.87"
         android:background="@drawable/ic_circle"
         android:src="@drawable/ic_download" />
 
@@ -103,35 +102,34 @@
             android:id="@+id/build_version"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:alpha="0.87"
+            android:layout_marginStart="30dp"
             android:fontFamily="@font/googlesans_regular"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="@color/theme_accent"
-            android:textSize="30sp"
-            tools:text="LineageOS 15.1" />
+            android:textFontWeight="900"
+            android:textSize="34sp"
+            tools:text="hentaiOS\nTwistedScarlett" />
 
         <TextView
             android:id="@+id/build_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
+            android:layout_marginStart="30dp"
             android:fontFamily="@font/googlesans_regular"
             android:maxLines="1"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:textSize="14sp"
+            android:textColor="@color/theme_accent3"
+            android:textSize="16sp"
             tools:text="29 February 2018" />
 
         <TextView
             android:id="@+id/build_size"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
+            android:layout_marginStart="30dp"
             android:fontFamily="@font/googlesans_regular"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
             android:singleLine="true"
+            android:textColor="@color/theme_accent3"
+            android:textSize="16sp"
             android:visibility="visible"
             tools:text="300 MB" />
 

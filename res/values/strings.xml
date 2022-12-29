@@ -89,7 +89,7 @@
     <string name="snack_download_verified">Update Available!</string>
     <string name="snack_update_not_installable">Update not installable</string>
 
-    <string name="header_title_text">Android <xliff:g id="rom_version" example="13">%1$s</xliff:g></string>
+    <string name="header_title_text"></string>
     <string name="header_android_version">Android version: <xliff:g id="version" example="7.1.2">%1$s</xliff:g></string>
     <string name="header_build_security_patch">Build security patch: <xliff:g id="date" example="2022-12-05">%1$s</xliff:g></string>
     <string name="header_build_date">Build date: <xliff:g id="date" example="December 6, 2022">%1$s</xliff:g></string>
