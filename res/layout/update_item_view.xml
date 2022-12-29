@@ -13,7 +13,7 @@
         android:id="@+id/changelog"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="120dp"
+        android:layout_marginBottom="160dp"
         android:fontFamily="@font/googlesans_regular"
         android:gravity="center"
         android:scrollbars="vertical"
