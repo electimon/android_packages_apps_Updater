@@ -26,6 +26,10 @@ public final class BuildInfoUtils {
         return SystemProperties.getLong(Constants.PROP_BUILD_DATE, 0);
     }
 
+    public static String getBuildSecurityPatchTimestamp() {
+        return SystemProperties.get(Constants.PROP_BUILD_SECURITY_PATCH);
+    }
+
     public static String getBuildVersion() {
         return SystemProperties.get(Constants.PROP_BUILD_VERSION);
     }

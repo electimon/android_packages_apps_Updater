@@ -9,97 +9,102 @@
     android:nextFocusRight="@+id/update_action"
     app:cardBackgroundColor="@color/tv_card_background">
 
-    <Button
+    <TextView
+        android:id="@+id/changelog"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="120dp"
+        android:fontFamily="@font/googlesans_regular"
+        android:gravity="center"
+        android:scrollbars="vertical"
+        android:text="this is a dummy,\ncentered,\nmulti-line\nchangelog" />
+
+    <ImageButton
         android:id="@id/update_action"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:textColor="@color/theme_accent3"
-        android:textSize="14sp" />
-
-    <RelativeLayout
-        android:id="@+id/progress_relative"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="40dp"
-        android:gravity="bottom">
-
-        <LinearLayout
-            android:id="@+id/progress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="bottom"
-            android:visibility="invisible"
-            tools:visibility="visible">
-
-            <ProgressBar
-                android:id="@+id/progress_bar"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingStart="8dp"
-                android:paddingTop="4sp"
-                android:paddingEnd="8dp"
-                tools:progress="65" />
-
-            <TextView
-                android:id="@+id/progress_percent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                tools:text="65%" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/progress_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/progress"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/progress_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="marquee"
-                android:gravity="center"
-                android:singleLine="true"
-                android:visibility="invisible"
-                tools:text="162 of 300 MB (3 minutes left)"
-                tools:visibility="visible" />
-
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/build_size"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/progress_layout"
-            android:gravity="end"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:singleLine="true"
-            android:visibility="visible"
-            tools:text="300 MB" />
-
-    </RelativeLayout>
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="30dp"
+        android:background="@drawable/ic_circle"
+        android:src="@drawable/ic_download" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="20dp"
         android:orientation="vertical">
+
+        <RelativeLayout
+            android:id="@+id/progress_relative"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_margin="20dp"
+            android:gravity="bottom">
+
+            <LinearLayout
+                android:id="@+id/progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="bottom"
+                android:visibility="invisible"
+                tools:visibility="visible">
+
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:paddingStart="8dp"
+                    android:paddingTop="4sp"
+                    android:paddingEnd="8dp"
+                    tools:progress="65" />
+
+                <TextView
+                    android:id="@+id/progress_percent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/googlesans_regular"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    tools:foregroundTint="@color/theme_accent"
+                    tools:text="65%" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/progress_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/progress"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/progress_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="marquee"
+                    android:fontFamily="@font/googlesans_regular"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    android:visibility="invisible"
+                    tools:text="162 of 300 MB (3 minutes left)"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
+
+        </RelativeLayout>
 
         <TextView
             android:id="@+id/build_version"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
             android:alpha="0.87"
-            android:gravity="center"
+            android:fontFamily="@font/googlesans_regular"
             android:maxLines="1"
             android:textColor="@color/theme_accent"
             android:textSize="30sp"
@@ -107,9 +112,10 @@
 
         <TextView
             android:id="@+id/build_date"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:layout_marginStart="20dp"
+            android:fontFamily="@font/googlesans_regular"
             android:maxLines="1"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
@@ -117,12 +123,16 @@
             tools:text="29 February 2018" />
 
         <TextView
-            android:id="@+id/changelog"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="60dp"
-            android:gravity="center"
-            android:text="this is a dummy,\ncentered,\nmulti-line changelog" />
+            android:id="@+id/build_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:fontFamily="@font/googlesans_regular"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:singleLine="true"
+            android:visibility="visible"
+            tools:text="300 MB" />
 
     </LinearLayout>
 

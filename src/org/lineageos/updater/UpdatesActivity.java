@@ -26,7 +26,6 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.icu.text.DateFormat;
 import android.net.Uri;
 import android.os.Build;
@@ -46,22 +45,17 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.cardview.widget.CardView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
-import androidx.appcompat.widget.Toolbar;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
-import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
@@ -143,9 +137,8 @@ public class UpdatesActivity extends UpdatesListActivity {
         };
 
         TextView headerRom = findViewById(R.id.header_rom);
-        headerRom.setText(
-                getString(R.string.header_title_text, Build.VERSION.RELEASE)
-        );
+        String headerRomText = getString(R.string.header_title_text, Build.VERSION.RELEASE);
+        headerRom.setText(headerRomText);
 
         ImageButton refreshBtn = findViewById(R.id.refreshbtn);
         refreshBtn.setOnClickListener(v -> downloadUpdatesList(true));
@@ -157,8 +150,11 @@ public class UpdatesActivity extends UpdatesListActivity {
                 getString(R.string.header_android_version, Build.VERSION.RELEASE));
 
         TextView headerBuildDate = findViewById(R.id.header_build_date);
-        headerBuildDate.setText(StringGenerator.getDateLocalizedUTC(this,
-                DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp()));
+        headerBuildDate.setText(getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
+                DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp())));
+
+        TextView headerBuildSecurityPatch = findViewById(R.id.header_build_security_patch);
+        headerBuildSecurityPatch.setText(getString(R.string.header_build_security_patch, BuildInfoUtils.getBuildSecurityPatchTimestamp()));
 
         if (!mIsTV) {
             // Switch between header title and appbar title minimizing overlaps
@@ -264,13 +260,22 @@ public class UpdatesActivity extends UpdatesListActivity {
         List<String> updateIds = new ArrayList<>();
         List<UpdateInfo> sortedUpdates = controller.getUpdates();
         if (sortedUpdates.isEmpty()) {
-            showSnackbar(R.string.snack_no_updates_found, Snackbar.LENGTH_SHORT);
+            setStatus(R.string.snack_no_updates_found);
             findViewById(R.id.recycler_view).setVisibility(View.GONE);
             findViewById(R.id.refreshbtn).setVisibility(View.VISIBLE);
+            findViewById(R.id.header_last_check).setVisibility(View.VISIBLE);
+            findViewById(R.id.header_build_version).setVisibility(View.VISIBLE);
+            findViewById(R.id.header_build_security_patch).setVisibility(View.VISIBLE);
+            findViewById(R.id.header_build_date).setVisibility(View.VISIBLE);
         } else {
-            showSnackbar(R.string.snack_updates_found, Snackbar.LENGTH_SHORT);
+            setStatus(R.string.snack_updates_found);
+            refreshAnimationStop();
             findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
             findViewById(R.id.refreshbtn).setVisibility(View.GONE);
+            findViewById(R.id.header_last_check).setVisibility(View.GONE);
+            findViewById(R.id.header_build_version).setVisibility(View.GONE);
+            findViewById(R.id.header_build_security_patch).setVisibility(View.GONE);
+            findViewById(R.id.header_build_date).setVisibility(View.GONE);
             sortedUpdates.sort((u1, u2) -> Long.compare(u2.getTimestamp(), u1.getTimestamp()));
             for (UpdateInfo update : sortedUpdates) {
                 updateIds.add(update.getDownloadId());
@@ -295,6 +300,7 @@ public class UpdatesActivity extends UpdatesListActivity {
     }
 
     private void processNewJson(File json, File jsonNew, boolean manualRefresh) {
+        setStatus(R.string.list_checking_updates);
         try {
             loadUpdatesList(jsonNew, manualRefresh);
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -311,7 +317,7 @@ public class UpdatesActivity extends UpdatesListActivity {
             jsonNew.renameTo(json);
         } catch (IOException | JSONException e) {
             Log.e(TAG, "Could not read json", e);
-            showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            setStatus(R.string.snack_updates_check_failed);
         }
     }
 
@@ -327,7 +333,7 @@ public class UpdatesActivity extends UpdatesListActivity {
                 Log.e(TAG, "Could not download updates list");
                 runOnUiThread(() -> {
                     if (!cancelled) {
-                        showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+                        setStatus(R.string.snack_updates_check_failed);
                     }
                     refreshAnimationStop();
                 });
@@ -356,7 +362,7 @@ public class UpdatesActivity extends UpdatesListActivity {
                     .build();
         } catch (IOException exception) {
             Log.e(TAG, "Could not build download client");
-            showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            setStatus(R.string.snack_updates_check_failed);
             return;
         }
 
@@ -383,13 +389,13 @@ public class UpdatesActivity extends UpdatesListActivity {
         UpdateInfo update = mUpdaterService.getUpdaterController().getUpdate(downloadId);
         switch (update.getStatus()) {
             case PAUSED_ERROR:
-                showSnackbar(R.string.snack_download_failed, Snackbar.LENGTH_LONG);
+                setStatus(R.string.snack_download_failed);
                 break;
             case VERIFICATION_FAILED:
-                showSnackbar(R.string.snack_download_verification_failed, Snackbar.LENGTH_LONG);
+                setStatus(R.string.snack_download_verification_failed);
                 break;
             case VERIFIED:
-                showSnackbar(R.string.snack_download_verified, Snackbar.LENGTH_LONG);
+                setStatus(R.string.snack_download_verified);
                 break;
         }
     }
@@ -414,8 +420,7 @@ public class UpdatesActivity extends UpdatesListActivity {
         startService(intent);
     }
 
-    @Override
-    public void showSnackbar(int stringId, int duration) {
+    public void setStatus(int stringId) {
         TextView headerStatus = findViewById(R.id.header_status);
         headerStatus.setText(getString(stringId));
     }

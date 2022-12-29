@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.media.Image;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.PowerManager;
@@ -96,7 +97,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        private final Button mAction;
+        private final ImageButton mAction;
         private final ImageButton mMenu;
 
         private final TextView mBuildDate;
@@ -156,10 +157,12 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
 
     private void handleActiveStatus(ViewHolder viewHolder, UpdateInfo update) {
         boolean canDelete = false;
+        boolean showProgress = false;
 
         final String downloadId = update.getDownloadId();
         if (mUpdaterController.isDownloading(downloadId)) {
-            //canDelete = true;
+            canDelete = true;
+            showProgress = true;
             String downloaded = Formatter.formatShortFileSize(mActivity,
                     update.getFile().length());
             String total = Formatter.formatShortFileSize(mActivity, update.getFileSize());
@@ -179,6 +182,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             viewHolder.mProgressBar.setIndeterminate(update.getStatus() == UpdateStatus.STARTING);
             viewHolder.mProgressBar.setProgress(update.getProgress());
         } else if (mUpdaterController.isInstallingUpdate(downloadId)) {
+            showProgress = true;
             setButtonAction(viewHolder.mAction, Action.CANCEL_INSTALLATION, downloadId, true);
             boolean notAB = !mUpdaterController.isInstallingABUpdate();
             viewHolder.mProgressText.setText(notAB ? R.string.dialog_prepare_zip_message :
@@ -188,13 +192,14 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             viewHolder.mProgressBar.setIndeterminate(false);
             viewHolder.mProgressBar.setProgress(update.getInstallProgress());
         } else if (mUpdaterController.isVerifyingUpdate(downloadId)) {
+            showProgress = true;
             setButtonAction(viewHolder.mAction, Action.INSTALL, downloadId, false);
             viewHolder.mProgressText.setText(R.string.list_verifying_update);
             viewHolder.mProgressBar.setIndeterminate(true);
         } else {
             canDelete = true;
             setButtonAction(viewHolder.mAction, Action.DOWNLOAD, downloadId, !isBusy());
-            /*String downloaded = Formatter.formatShortFileSize(mActivity,
+            String downloaded = Formatter.formatShortFileSize(mActivity,
                     update.getFile().length());
             String total = Formatter.formatShortFileSize(mActivity, update.getFileSize());
             String percentage = NumberFormat.getPercentInstance().format(
@@ -203,18 +208,16 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             viewHolder.mProgressText.setText(mActivity.getString(
                     R.string.list_download_progress_newer, downloaded, total));
             viewHolder.mProgressBar.setIndeterminate(false);
-            viewHolder.mProgressBar.setProgress(update.getProgress());*/
+            viewHolder.mProgressBar.setProgress(update.getProgress());
         }
 
-        if (canDelete) {
-            viewHolder.mProgress.setVisibility(View.GONE);
-            viewHolder.mProgressText.setVisibility(View.GONE);
-            viewHolder.mBuildSize.setVisibility(View.VISIBLE);
-        } else {
+        if (showProgress) {
             viewHolder.mMenu.setOnClickListener(getClickListener(update, false, viewHolder.mMenu));
             viewHolder.mProgress.setVisibility(View.VISIBLE);
             viewHolder.mProgressText.setVisibility(View.VISIBLE);
-            viewHolder.mBuildSize.setVisibility(View.GONE);
+        } else {
+            viewHolder.mProgress.setVisibility(View.GONE);
+            viewHolder.mProgressText.setVisibility(View.GONE);
         }
     }
 
@@ -240,7 +243,6 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
 
         viewHolder.mProgress.setVisibility(View.GONE);
         viewHolder.mProgressText.setVisibility(View.GONE);
-        viewHolder.mBuildSize.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -255,7 +257,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         if (update == null) {
             // The update was deleted
             viewHolder.mAction.setEnabled(false);
-            viewHolder.mAction.setText(R.string.action_download);
+            viewHolder.mAction.setImageResource(R.drawable.ic_download);
             return;
         }
 
@@ -283,6 +285,9 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         viewHolder.mBuildDate.setText(buildDate);
         viewHolder.mBuildVersion.setText(buildVersion);
         viewHolder.mBuildVersion.setCompoundDrawables(null, null, null, null);
+
+        viewHolder.mProgress.setVisibility(View.GONE);
+        viewHolder.mProgressText.setVisibility(View.GONE);
 
         if (activeLayout) {
             handleActiveStatus(viewHolder, update);
@@ -347,23 +352,23 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                 .show();
     }
 
-    private void setButtonAction(Button button, Action action, final String downloadId,
+    private void setButtonAction(ImageButton button, Action action, final String downloadId,
             boolean enabled) {
         final View.OnClickListener clickListener;
         switch (action) {
             case DOWNLOAD:
-                button.setText(R.string.action_download);
+                button.setImageResource(R.drawable.ic_download);
                 button.setEnabled(enabled);
                 clickListener = enabled ? view -> startDownloadWithWarning(downloadId) : null;
                 break;
             case PAUSE:
-                button.setText(R.string.action_pause);
+                button.setImageResource(R.drawable.ic_pause);
                 button.setEnabled(enabled);
                 clickListener = enabled ? view -> mUpdaterController.pauseDownload(downloadId)
                         : null;
                 break;
             case RESUME: {
-                button.setText(R.string.action_resume);
+                button.setImageResource(R.drawable.ic_resume);
                 button.setEnabled(enabled);
                 UpdateInfo update = mUpdaterController.getUpdate(downloadId);
                 final boolean canInstall = Utils.canInstall(update) ||
@@ -372,14 +377,13 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                     if (canInstall) {
                         mUpdaterController.resumeDownload(downloadId);
                     } else {
-                        mActivity.showSnackbar(R.string.snack_update_not_installable,
-                                Snackbar.LENGTH_LONG);
+                        mActivity.setStatus(R.string.snack_update_not_installable);
                     }
                 } : null;
             }
             break;
             case INSTALL: {
-                button.setText(R.string.action_install);
+                button.setImageResource(R.drawable.ic_install);
                 button.setEnabled(enabled);
                 UpdateInfo update = mUpdaterController.getUpdate(downloadId);
                 final boolean canInstall = Utils.canInstall(update);
@@ -390,32 +394,31 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                             installDialog.show();
                         }
                     } else {
-                        mActivity.showSnackbar(R.string.snack_update_not_installable,
-                                Snackbar.LENGTH_LONG);
+                        mActivity.setStatus(R.string.snack_update_not_installable);
                     }
                 } : null;
             }
             break;
             case INFO: {
-                button.setText(R.string.action_info);
+                button.setImageResource(R.drawable.ic_settings);
                 button.setEnabled(enabled);
                 clickListener = enabled ? view -> showInfoDialog() : null;
             }
             break;
             case DELETE: {
-                button.setText(R.string.action_delete);
+                button.setImageResource(R.drawable.ic_trash);
                 button.setEnabled(enabled);
                 clickListener = enabled ? view -> getDeleteDialog(downloadId).show() : null;
             }
             break;
             case CANCEL_INSTALLATION: {
-                button.setText(R.string.action_cancel);
+                button.setImageResource(R.drawable.ic_trash);
                 button.setEnabled(enabled);
                 clickListener = enabled ? view -> getCancelInstallationDialog().show() : null;
             }
             break;
             case REBOOT: {
-                button.setText(R.string.reboot);
+                button.setImageResource(R.drawable.ic_restart);
                 button.setEnabled(enabled);
                 clickListener = enabled ? view -> {
                     PowerManager pm = mActivity.getSystemService(PowerManager.class);
