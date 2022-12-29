@@ -53,7 +53,6 @@
         android:layout_marginLeft="10dp"
         android:layout_marginTop="30dp"
         android:fontFamily="@font/googlesans_regular"
-        android:gravity="center"
         android:text="@string/header_title_text"
         android:textColor="@color/theme_accent3"
         android:textSize="36sp"
