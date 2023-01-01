@@ -42,6 +42,7 @@ import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,8 +56,6 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
-
-import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
 import org.lineageos.updater.controller.UpdaterController;
@@ -261,8 +260,8 @@ public class UpdatesActivity extends UpdatesListActivity {
         List<UpdateInfo> sortedUpdates = controller.getUpdates();
         if (sortedUpdates.isEmpty()) {
             setStatus(R.string.snack_no_updates_found);
-            findViewById(R.id.recycler_view).setVisibility(View.GONE);
             findViewById(R.id.refreshbtn).setVisibility(View.VISIBLE);
+            findViewById(R.id.recycler_view).setVisibility(View.GONE);
             findViewById(R.id.header_last_check).setVisibility(View.VISIBLE);
             findViewById(R.id.header_build_version).setVisibility(View.VISIBLE);
             findViewById(R.id.header_build_security_patch).setVisibility(View.VISIBLE);
@@ -270,8 +269,8 @@ public class UpdatesActivity extends UpdatesListActivity {
         } else {
             setStatus(R.string.snack_updates_found);
             refreshAnimationStop();
-            findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
             findViewById(R.id.refreshbtn).setVisibility(View.GONE);
+            findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
             findViewById(R.id.header_last_check).setVisibility(View.GONE);
             findViewById(R.id.header_build_version).setVisibility(View.GONE);
             findViewById(R.id.header_build_security_patch).setVisibility(View.GONE);

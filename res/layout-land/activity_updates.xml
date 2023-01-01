@@ -14,18 +14,18 @@
         android:layout_height="46dp"
         android:layout_marginStart="40dp"
         android:layout_marginTop="30dp"
-        app:tint="@color/theme_accent2"
         app:layout_constraintRight_toLeftOf="@id/header_rom"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_system_update" />
+        app:srcCompat="@drawable/ic_system_update"
+        app:tint="@color/theme_accent2" />
 
     <ImageButton
         android:id="@+id/refreshbtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="18dp"
-        android:layout_marginBottom="50dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/ic_circle"
         android:contentDescription="@string/menu_refresh"
         android:src="@drawable/ic_menu_refresh"
@@ -36,13 +36,11 @@
         android:id="@+id/header_last_check"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginStart="30dp"
         android:fontFamily="@font/harmonyos_sans_regular"
         android:text="@string/header_last_updates_check_never"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -63,15 +61,14 @@
         android:id="@+id/header_status"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginEnd="40dp"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="35dp"
+        android:layout_marginEnd="60dp"
         android:fontFamily="@font/harmonyos_sans_regular"
         android:text="@string/list_no_updates"
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="37sp"
-        app:layout_constraintBottom_toTopOf="@+id/header_build_version"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/barrier"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/header_rom" />
 
@@ -79,16 +76,15 @@
         android:id="@+id/header_build_version"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="10dp"
         android:fontFamily="@font/harmonyos_sans_regular"
-        android:gravity="start"
         android:text="@string/list_build_version"
         android:textColor="@color/theme_accent3"
         android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@+id/header_build_security_patch"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.6"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/header_status" />
+        app:layout_constraintTop_toTopOf="@id/header_status_icon" />
 
     <TextView
         android:id="@+id/header_build_security_patch"
@@ -121,18 +117,25 @@
         android:id="@+id/recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginEnd="10dp"
+        android:layout_marginStart="30dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="10dp"
         android:clipToPadding="false"
-        android:scrollbars="vertical"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/header_status">
+        app:layout_constraintTop_toTopOf="parent">
 
     </androidx.recyclerview.widget.RecyclerView>
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/barrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="start"
+        app:constraint_referenced_ids="header_build_version"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

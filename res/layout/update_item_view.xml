@@ -9,39 +9,62 @@
     android:nextFocusRight="@+id/update_action"
     app:cardBackgroundColor="@color/tv_card_background">
 
-    <TextView
+    <WebView
         android:id="@+id/changelog"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="160dp"
-        android:fontFamily="@font/googlesans_regular"
-        android:gravity="center"
-        android:scrollbars="vertical"
-        android:text="this is a dummy,\ncentered,\nmulti-line\nchangelog" />
-
-    <ImageButton
-        android:id="@id/update_action"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="30dp"
-        android:background="@drawable/ic_circle"
-        android:src="@drawable/ic_download" />
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="180dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="20dp"
         android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/build_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/harmonyos_sans_regular"
+            android:maxLines="2"
+            android:textColor="@color/theme_accent"
+            android:textFontWeight="900"
+            android:textSize="34sp"
+            tools:text="hentaiOS\nTwistedScarlett" />
+
+        <TextView
+            android:id="@+id/build_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/harmonyos_sans_regular"
+            android:maxLines="1"
+            android:textColor="@color/theme_accent3"
+            android:textSize="16sp"
+            tools:text="29 February 2018" />
+
+        <TextView
+            android:id="@+id/build_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/harmonyos_sans_regular"
+            android:singleLine="true"
+            android:textColor="@color/theme_accent3"
+            android:textSize="16sp"
+            android:visibility="visible"
+            tools:text="300 MB" />
 
         <RelativeLayout
             android:id="@+id/progress_relative"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:layout_margin="20dp"
             android:gravity="bottom">
 
             <LinearLayout
@@ -67,7 +90,7 @@
                     android:id="@+id/progress_percent"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/googlesans_regular"
+                    android:fontFamily="@font/harmonyos_sans_regular"
                     android:paddingStart="8dp"
                     android:paddingEnd="8dp"
                     tools:foregroundTint="@color/theme_accent"
@@ -87,7 +110,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:ellipsize="marquee"
-                    android:fontFamily="@font/googlesans_regular"
+                    android:fontFamily="@font/harmonyos_sans_regular"
                     android:gravity="center"
                     android:singleLine="true"
                     android:visibility="invisible"
@@ -97,43 +120,17 @@
             </LinearLayout>
 
         </RelativeLayout>
-
-        <TextView
-            android:id="@+id/build_version"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:fontFamily="@font/googlesans_regular"
-            android:maxLines="2"
-            android:textColor="@color/theme_accent"
-            android:textFontWeight="900"
-            android:textSize="34sp"
-            tools:text="hentaiOS\nTwistedScarlett" />
-
-        <TextView
-            android:id="@+id/build_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:fontFamily="@font/googlesans_regular"
-            android:maxLines="1"
-            android:textColor="@color/theme_accent3"
-            android:textSize="16sp"
-            tools:text="29 February 2018" />
-
-        <TextView
-            android:id="@+id/build_size"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:fontFamily="@font/googlesans_regular"
-            android:singleLine="true"
-            android:textColor="@color/theme_accent3"
-            android:textSize="16sp"
-            android:visibility="visible"
-            tools:text="300 MB" />
-
     </LinearLayout>
+
+    <ImageButton
+        android:id="@id/update_action"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="40dp"
+        android:background="@drawable/ic_circle"
+        android:src="@drawable/ic_download" />
 
     <LinearLayout
         android:layout_width="match_parent"

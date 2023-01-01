@@ -16,10 +16,13 @@
 package org.lineageos.updater;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.media.Image;
 import android.net.Uri;
 import android.os.BatteryManager;
@@ -27,18 +30,23 @@ import android.os.PowerManager;
 import android.text.SpannableString;
 import android.text.format.Formatter;
 import android.text.method.LinkMovementMethod;
+import android.text.method.ScrollingMovementMethod;
 import android.text.util.Linkify;
+import android.util.Base64;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -49,6 +57,7 @@ import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.appcompat.view.menu.MenuBuilder;
 import androidx.appcompat.view.menu.MenuPopupHelper;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -63,10 +72,15 @@ import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.UpdateInfo;
 import org.lineageos.updater.model.UpdateStatus;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.ViewHolder> {
 
@@ -96,7 +110,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         REBOOT,
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder {
         private final ImageButton mAction;
         private final ImageButton mMenu;
 
@@ -108,6 +122,8 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         private final ProgressBar mProgressBar;
         private final TextView mProgressText;
         private final TextView mPercentage;
+
+        public final WebView mChangelog;
 
         public ViewHolder(final View view) {
             super(view);
@@ -122,6 +138,24 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             mProgressBar = view.findViewById(R.id.progress_bar);
             mProgressText = view.findViewById(R.id.progress_text);
             mPercentage = view.findViewById(R.id.progress_percent);
+
+            mChangelog = view.findViewById(R.id.changelog);
+            mChangelog.setOnTouchListener(new View.OnTouchListener() {
+                public boolean onTouch(View v, MotionEvent event) {
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                    return false;
+                }
+            });
+
+            String data = LoadAssetData("README.html");
+            int colorText = mActivity.getResources().getColor(R.color.theme_accent3, mActivity.getTheme());
+            int colorTextR = Color.red(colorText);
+            int colorTextG = Color.green(colorText);
+            int colorTextB = Color.blue(colorText);
+            String htmlColor = String.format("#%02x%02x%02x", colorTextR, colorTextG, colorTextB);
+            String html = "<html><head><style>@font-face { font-family: harmony; src: url('file:///android_asset/harmonyos_sans_regular.ttf'); } body { font-family: harmony; font-size: medium; text-align: justify; color: " + htmlColor + " }</style></head><body>" + data + "</body></html>";
+            mChangelog.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
+            mChangelog.setBackgroundColor(Color.TRANSPARENT);
         }
     }
 
@@ -286,6 +320,9 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         viewHolder.mBuildVersion.setText(buildVersion);
         viewHolder.mBuildVersion.setCompoundDrawables(null, null, null, null);
 
+        String fileSize = Formatter.formatShortFileSize(mActivity, update.getFileSize());
+        viewHolder.mBuildSize.setText(fileSize);
+
         viewHolder.mProgress.setVisibility(View.GONE);
         viewHolder.mProgressText.setVisibility(View.GONE);
 
@@ -322,36 +359,6 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         notifyItemRangeChanged(position, getItemCount());
     }
 
-    private void startDownloadWithWarning(final String downloadId) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        boolean warn = preferences.getBoolean(Constants.PREF_MOBILE_DATA_WARNING, true);
-        if (Utils.isOnWifiOrEthernet(mActivity) || !warn) {
-            mUpdaterController.startDownload(downloadId);
-            return;
-        }
-
-        View checkboxView = LayoutInflater.from(mActivity).inflate(R.layout.checkbox_view, null);
-        CheckBox checkbox = checkboxView.findViewById(R.id.checkbox);
-        checkbox.setText(R.string.checkbox_mobile_data_warning);
-
-        new AlertDialog.Builder(mActivity)
-                .setTitle(R.string.update_on_mobile_data_title)
-                .setMessage(R.string.update_on_mobile_data_message)
-                .setView(checkboxView)
-                .setPositiveButton(R.string.action_download,
-                        (dialog, which) -> {
-                            if (checkbox.isChecked()) {
-                                preferences.edit()
-                                        .putBoolean(Constants.PREF_MOBILE_DATA_WARNING, false)
-                                        .apply();
-                                mActivity.supportInvalidateOptionsMenu();
-                            }
-                            mUpdaterController.startDownload(downloadId);
-                        })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
     private void setButtonAction(ImageButton button, Action action, final String downloadId,
             boolean enabled) {
         final View.OnClickListener clickListener;
@@ -359,7 +366,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
             case DOWNLOAD:
                 button.setImageResource(R.drawable.ic_download);
                 button.setEnabled(enabled);
-                clickListener = enabled ? view -> startDownloadWithWarning(downloadId) : null;
+                clickListener = enabled ? view -> mUpdaterController.startDownload(downloadId) : null;
                 break;
             case PAUSE:
                 button.setImageResource(R.drawable.ic_pause);
@@ -389,10 +396,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                 final boolean canInstall = Utils.canInstall(update);
                 clickListener = enabled ? view -> {
                     if (canInstall) {
-                        AlertDialog.Builder installDialog = getInstallDialog(downloadId);
-                        if (installDialog != null) {
-                            installDialog.show();
-                        }
+                        Utils.triggerUpdate(mActivity, downloadId);
                     } else {
                         mActivity.setStatus(R.string.snack_update_not_installable);
                     }
@@ -445,7 +449,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
     }
 
     private AlertDialog.Builder getDeleteDialog(final String downloadId) {
-        return new AlertDialog.Builder(mActivity)
+        return new AlertDialog.Builder(new ContextThemeWrapper(mActivity, R.style.AppTheme_AlertDialog))
                 .setTitle(R.string.confirm_delete_dialog_title)
                 .setMessage(R.string.confirm_delete_dialog_message)
                 .setPositiveButton(android.R.string.ok,
@@ -461,48 +465,8 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         return view -> startActionMode(update, canDelete, anchor);
     }
 
-    private AlertDialog.Builder getInstallDialog(final String downloadId) {
-        if (!isBatteryLevelOk()) {
-            Resources resources = mActivity.getResources();
-            String message = resources.getString(R.string.dialog_battery_low_message_pct,
-                    resources.getInteger(R.integer.battery_ok_percentage_discharging),
-                    resources.getInteger(R.integer.battery_ok_percentage_charging));
-            return new AlertDialog.Builder(mActivity)
-                    .setTitle(R.string.dialog_battery_low_title)
-                    .setMessage(message)
-                    .setPositiveButton(android.R.string.ok, null);
-        }
-        UpdateInfo update = mUpdaterController.getUpdate(downloadId);
-        int resId;
-        try {
-            if (Utils.isABUpdate(update.getFile())) {
-                resId = R.string.apply_update_dialog_message_ab;
-            } else {
-                resId = R.string.apply_update_dialog_message;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Could not determine the type of the update");
-            return null;
-        }
-
-        String buildDate = StringGenerator.getDateLocalizedUTC(mActivity,
-                DateFormat.MEDIUM, update.getTimestamp());
-        String buildInfoText = mActivity.getString(R.string.list_build_version_date,
-                update.getVersion(), buildDate);
-        return new AlertDialog.Builder(mActivity)
-                .setTitle(R.string.apply_update_dialog_title)
-                .setMessage(mActivity.getString(resId, buildInfoText,
-                        mActivity.getString(android.R.string.ok)))
-                .setPositiveButton(android.R.string.ok,
-                        (dialog, which) -> {
-                            Utils.triggerUpdate(mActivity, downloadId);
-                            maybeShowInfoDialog();
-                        })
-                .setNegativeButton(android.R.string.cancel, null);
-    }
-
     private AlertDialog.Builder getCancelInstallationDialog() {
-        return new AlertDialog.Builder(mActivity)
+        return new AlertDialog.Builder(new ContextThemeWrapper(mActivity, R.style.AppTheme_AlertDialog))
                 .setMessage(R.string.cancel_installation_dialog_message)
                 .setPositiveButton(android.R.string.ok,
                         (dialog, which) -> {
@@ -511,21 +475,6 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                             mActivity.startService(intent);
                         })
                 .setNegativeButton(android.R.string.cancel, null);
-    }
-
-    private void maybeShowInfoDialog() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mActivity);
-        boolean alreadySeen = preferences.getBoolean(Constants.HAS_SEEN_INFO_DIALOG, false);
-        if (alreadySeen) {
-            return;
-        }
-        new AlertDialog.Builder(mActivity)
-                .setTitle(R.string.info_dialog_title)
-                .setMessage(R.string.info_dialog_message)
-                .setPositiveButton(R.string.info_dialog_ok, (dialog, which) -> preferences.edit()
-                        .putBoolean(Constants.HAS_SEEN_INFO_DIALOG, true)
-                        .apply())
-                .show();
     }
 
     private void startActionMode(final UpdateInfo update, final boolean canDelete, View anchor) {
@@ -577,7 +526,7 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
         if (infoDialog != null) {
             infoDialog.dismiss();
         }
-        infoDialog = new AlertDialog.Builder(mActivity)
+        infoDialog = new AlertDialog.Builder(new ContextThemeWrapper(mActivity, R.style.AppTheme_AlertDialog))
                 .setTitle(R.string.blocked_update_dialog_title)
                 .setPositiveButton(android.R.string.ok, null)
                 .setMessage(message)
@@ -601,5 +550,26 @@ public class UpdatesListAdapter extends RecyclerView.Adapter<UpdatesListAdapter.
                 mActivity.getResources().getInteger(R.integer.battery_ok_percentage_charging) :
                 mActivity.getResources().getInteger(R.integer.battery_ok_percentage_discharging);
         return percent >= required;
+    }
+
+    public String LoadAssetData(String inFile) {
+        String contents = "";
+
+        try {
+            Context context = mActivity.getApplicationContext();
+            InputStream file = context.getAssets().open(inFile);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(file));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (contents != "")
+                    contents += "\n";
+                contents += line;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return contents;
     }
 }

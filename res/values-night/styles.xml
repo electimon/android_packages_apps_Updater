@@ -36,4 +36,10 @@
         <item name="android:dropDownVerticalOffset">8dp</item>
         <item name="android:dropDownHorizontalOffset">-16dp</item>
     </style>
+
+    <style name="AppTheme.AlertDialog" parent="Theme.AppCompat.DayNight.Dialog.Alert">
+        <item name="colorAccent">@color/theme_accent</item>
+        <item name="android:textColorPrimary">@color/theme_accent3</item>
+        <item name="android:background">@color/background</item>
+    </style>
 </resources>
