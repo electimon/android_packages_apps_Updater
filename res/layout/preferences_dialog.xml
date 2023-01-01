@@ -45,12 +45,4 @@
         android:text="@string/menu_mobile_data_warning"
         android:textSize="16sp" />
 
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/preferences_update_recovery"
-        android:layout_width="match_parent"
-        android:layout_height="42dp"
-        android:layout_marginBottom="16dp"
-        android:text="@string/menu_update_recovery"
-        android:textSize="16sp" />
-
 </LinearLayout>

@@ -99,8 +99,7 @@ public class Utils {
             Log.d(TAG, update.getName() + " is older than current Android version");
             return false;
         }
-        if (!SystemProperties.getBoolean(Constants.PROP_UPDATER_ALLOW_DOWNGRADING, false) &&
-                update.getTimestamp() <= SystemProperties.getLong(Constants.PROP_BUILD_DATE, 0)) {
+        if (update.getTimestamp() < SystemProperties.getLong(Constants.PROP_BUILD_DATE, 0)) {
             Log.d(TAG, update.getName() + " is older than/equal to the current build");
             return false;
         }
@@ -112,8 +111,7 @@ public class Utils {
     }
 
     public static boolean canInstall(UpdateBaseInfo update) {
-        return (SystemProperties.getBoolean(Constants.PROP_UPDATER_ALLOW_DOWNGRADING, false) ||
-                update.getTimestamp() > SystemProperties.getLong(Constants.PROP_BUILD_DATE, 0)) &&
+        return update.getTimestamp() >= SystemProperties.getLong(Constants.PROP_BUILD_DATE, 0) &&
                 update.getVersion().equalsIgnoreCase(
                         SystemProperties.get(Constants.PROP_BUILD_VERSION));
     }
@@ -399,9 +397,5 @@ public class Utils {
             case Constants.AUTO_UPDATES_CHECK_INTERVAL_MONTHLY:
                 return AlarmManager.INTERVAL_DAY * 30;
         }
-    }
-
-    public static boolean isRecoveryUpdateExecPresent() {
-        return new File(Constants.UPDATE_RECOVERY_EXEC).exists();
     }
 }
