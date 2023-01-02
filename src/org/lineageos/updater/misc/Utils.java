@@ -82,7 +82,7 @@ public class Utils {
 
     // This should really return an UpdateBaseInfo object, but currently this only
     // used to initialize UpdateInfo objects
-    private static UpdateInfo parseJsonUpdate(JSONObject object) throws JSONException {
+    public static UpdateInfo parseJsonUpdate(JSONObject object) throws JSONException {
         Update update = new Update();
         update.setTimestamp(object.getLong("datetime"));
         update.setName(object.getString("filename"));

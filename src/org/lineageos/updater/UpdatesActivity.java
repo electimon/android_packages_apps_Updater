@@ -1,173 +1,420 @@
-/*
- * Copyright (C) 2017-2022 The LineageOS Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.lineageos.updater;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.UiModeManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.Configuration;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.icu.text.DateFormat;
-import android.net.Uri;
+import android.icu.text.NumberFormat;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.SystemProperties;
+import android.os.PowerManager;
+import android.os.StrictMode;
+import android.text.format.Formatter;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
-import android.widget.ImageButton;
+import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Spinner;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.preference.PreferenceManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SimpleItemAnimator;
 
-import org.json.JSONException;
+import org.json.JSONObject;
 import org.lineageos.updater.controller.UpdaterController;
 import org.lineageos.updater.controller.UpdaterService;
-import org.lineageos.updater.download.DownloadClient;
 import org.lineageos.updater.misc.BuildInfoUtils;
-import org.lineageos.updater.misc.Constants;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
 import org.lineageos.updater.model.UpdateInfo;
+import org.lineageos.updater.model.UpdateStatus;
 
-import java.io.File;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class UpdatesActivity extends UpdatesListActivity {
+public class UpdatesActivity extends AppCompatActivity {
+    private static final String TAG = "Updates";
+    private Exception exception;
+    private UpdatesActivity activity;
 
-    private static final String TAG = "UpdatesActivity";
+
+    private ImageView headerIcon;
+    private TextView headerTitle;
+    private TextView headerStatus;
+    private Button btnPrimary;
+    private Button btnSecondary;
+    private Button btnExtra;
+    private WebView webView;
+    private TextView progressText;
+    private ProgressBar progressBar;
+
+    private int htmlColor;
+    private String htmlCurrentBuild = "";
+    private String htmlChangelog = "";
+
     private UpdaterService mUpdaterService;
     private BroadcastReceiver mBroadcastReceiver;
+    private UpdaterController mUpdaterController;
 
-    private UpdatesListAdapter mAdapter;
+    private UpdateInfo update;
+    private String updateId = "";
+    private Boolean updateCheck;
 
-    private View mRefreshIconView;
-    private RotateAnimation mRefreshAnimation;
-
-    private boolean mIsTV;
-
-    private UpdateInfo mToBeExported = null;
-    private final ActivityResultLauncher<Intent> mExportUpdate = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK) {
-                    Intent intent = result.getData();
-                    if (intent != null) {
-                        Uri uri = intent.getData();
-                        exportUpdate(uri);
-                    }
+    private class PageHandler extends AsyncTask<Void, Void, Page> {
+        @Override
+        protected Page doInBackground(Void... voids) {
+            if (updateId != "" && update != null) {
+                if (update.getStatus() == UpdateStatus.STARTING) {
+                    return pageUpdateStarting();
+                } else if (mUpdaterController.isDownloading(updateId)) {
+                    return pageUpdateDownloading();
+                } else if (mUpdaterController.isInstallingUpdate(updateId) || update.getStatus() == UpdateStatus.INSTALLING) {
+                    return pageUpdateInstalling();
+                } else if (mUpdaterController.isVerifyingUpdate(updateId)) {
+                    return pageUpdateVerifying();
+                } else if (mUpdaterController.isWaitingForReboot(updateId)) {
+                    return pageInstallComplete();
+                } else if (updateCheck) {
+                    return pageUpdateChecking();
                 }
-            });
+            }
+            return pageCheckForUpdates();
+        }
+
+        @Override
+        protected void onPostExecute(Page result) {
+            super.onPostExecute(result);
+            setPage(result);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_updates);
+        setContentView(R.layout.page_updates);
 
-        UiModeManager uiModeManager = getSystemService(UiModeManager.class);
-        mIsTV = uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION;
+        //Allow doing stupid things like running network operations on the main activity thread
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
-        RecyclerView recyclerView = findViewById(R.id.recycler_view);
-        mAdapter = new UpdatesListAdapter(this);
-        recyclerView.setAdapter(mAdapter);
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
-        RecyclerView.ItemAnimator animator = recyclerView.getItemAnimator();
-        if (animator instanceof SimpleItemAnimator) {
-            ((SimpleItemAnimator) animator).setSupportsChangeAnimations(false);
-        }
+        activity = this;
+        headerIcon = findViewById(R.id.header_icon);
+        headerTitle = findViewById(R.id.header_title);
+        headerStatus = findViewById(R.id.header_status);
+        btnPrimary = findViewById(R.id.btn_primary);
+        btnSecondary = findViewById(R.id.btn_secondary);
+        btnExtra = findViewById(R.id.btn_extra);
+        webView = findViewById(R.id.webview);
+        progressText = findViewById(R.id.progress_text);
+        progressBar = findViewById(R.id.progress_bar);
 
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
+                if (downloadId == "") {
+                    return;
+                }
+                update = mUpdaterService.getUpdaterController().getUpdate(downloadId);
+
                 if (UpdaterController.ACTION_UPDATE_STATUS.equals(intent.getAction())) {
-                    String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
-                    handleDownloadStatusChange(downloadId);
-                    mAdapter.notifyItemChanged(downloadId);
-                } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction()) ||
-                        UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
-                    String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
-                    mAdapter.notifyItemChanged(downloadId);
+                    Page page = pageUpdateRetryDownload();
+                    switch (update.getStatus()) {
+                        case PAUSED_ERROR:
+                            setPage(page);
+                            break;
+                        case VERIFICATION_FAILED:
+                            page.strStatus = getString(R.string.snack_download_verification_failed);
+                            setPage(page);
+                            break;
+                        case VERIFIED:
+                            install();
+                            break;
+                    }
+                } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
+                    Page page = pageUpdateDownloading();
+
+                    String downloaded = Formatter.formatShortFileSize(activity, update.getFile().length());
+                    String total = Formatter.formatShortFileSize(activity, update.getFileSize());
+                    String percentage = NumberFormat.getPercentInstance().format(update.getProgress() / 100.f);
+
+                    page.progPercent = update.getProgress();
+                    page.progStep = percentage + " - " + downloaded + " / " + total;
+
+                    if (update.getEta() > 0) {
+                        CharSequence etaString = StringGenerator.formatETA(activity, update.getEta() * 1000);
+                        page.progStep += " - " + etaString;
+                    }
+
+                    setPage(page);
+                } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
+                    setPage(pageUpdateInstalling());
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
-                    String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
-                    mAdapter.removeItem(downloadId);
+                    setPage(pageCheckForUpdates());
+                } else {
+                    setPage(pageError("Unknown intent: " + intent.getAction()));
                 }
             }
         };
 
-        TextView headerRom = findViewById(R.id.header_rom);
-        String headerRomText = getString(R.string.header_title_text, Build.VERSION.RELEASE);
-        headerRom.setText(headerRomText);
+        htmlColor = this.getResources().getColor(R.color.theme_accent3, this.getTheme());
+        htmlCurrentBuild = String.format("%s<br />%s<br />%s",
+                getString(R.string.header_android_version, Build.VERSION.RELEASE),
+                getString(R.string.header_build_security_patch, BuildInfoUtils.getBuildSecurityPatchTimestamp()),
+                getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
+                        DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp())));
 
-        ImageButton refreshBtn = findViewById(R.id.refreshbtn);
-        refreshBtn.setOnClickListener(v -> downloadUpdatesList(true));
+        new PageHandler().execute();
+    }
 
-        updateLastCheckedString();
+    public void setPage(Page page) {
+        page.render(headerIcon, headerTitle, headerStatus, btnPrimary, btnSecondary, btnExtra, progressText, progressBar, webView);
+    }
 
-        TextView headerBuildVersion = findViewById(R.id.header_build_version);
-        headerBuildVersion.setText(
-                getString(R.string.header_android_version, Build.VERSION.RELEASE));
+    private Page pageError(String error) {
+        Page page = new Page();
+        page.icon = R.drawable.ic_settings;
+        page.strTitle = "ERROR";
+        page.strStatus = "An unhandled exception has occurred";
+        page.btnPrimaryText = "Try again";
+        page.btnPrimaryClickListener = v -> {
+            setPage(pageCheckForUpdates());
+        };
+        page.btnSecondaryText = "Exit";
+        page.btnSecondaryClickListener = v -> {
+            this.finish();
+            System.exit(1);
+        };
+        page.htmlContent = error.toString() + "<p><img src='file:///android_asset/error.gif' width='100%' /></p>";
+        page.htmlColor = htmlColor;
+        return page;
+    }
 
-        TextView headerBuildDate = findViewById(R.id.header_build_date);
-        headerBuildDate.setText(getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
-                DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp())));
+    private Page pageCheckForUpdates() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_menu_refresh;
+        page.strStatus = "Your system is up to date";
+        page.btnPrimaryText = "Check for updates";
+        page.btnPrimaryClickListener = v -> {
+            refresh();
+        };
+        page.btnExtraText = "ERROR";
+        page.btnExtraClickListener = v -> {
+            setPage(pageError("nothing happened this time lol"));
+        };
+        page.htmlContent = htmlCurrentBuild;
+        page.htmlColor = htmlColor;
+        return page;
+    }
 
-        TextView headerBuildSecurityPatch = findViewById(R.id.header_build_security_patch);
-        headerBuildSecurityPatch.setText(getString(R.string.header_build_security_patch, BuildInfoUtils.getBuildSecurityPatchTimestamp()));
+    private Page pageUpdateChecking() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_menu_refresh;
+        page.strStatus = "Checking for updates...";
+        return page;
+    }
 
-        if (!mIsTV) {
-            // Switch between header title and appbar title minimizing overlaps
-            mRefreshAnimation = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f,
-                    Animation.RELATIVE_TO_SELF, 0.5f);
-            mRefreshAnimation.setInterpolator(new LinearInterpolator());
-            mRefreshAnimation.setDuration(1000);
-        } else {
-            findViewById(R.id.refresh).setOnClickListener(v -> downloadUpdatesList(true));
-            findViewById(R.id.preferences).setOnClickListener(v -> showPreferencesDialog());
+    private Page pageUpdateAvailable() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = "System update available";
+        page.btnPrimaryText = "Download";
+        page.btnPrimaryClickListener = v -> {
+            download();
+        };
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageUpdateStarting() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = "Starting...";
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageUpdateDownloading() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = "Downloading...";
+        page.btnPrimaryText = "Pause";
+        page.btnPrimaryClickListener = v -> {
+            downloadPause();
+        };
+        page.btnSecondaryText = "Cancel";
+        page.btnSecondaryClickListener = v -> {
+            downloadCancel();
+        };
+        page.progStep = "Waiting to download...";
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageUpdateRetryDownload() {
+        Page page = pageUpdateDownloading();
+        page.strStatus = getString(R.string.snack_download_failed);
+        page.btnPrimaryText = "Retry";
+        page.btnPrimaryClickListener = v -> {
+            download();
+        };
+        return page;
+    }
+
+    private Page pageUpdateVerifying() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = "Verifying...";
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageUpdateInstalling() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_install;
+        page.strStatus = "Installing...";
+        page.btnPrimaryText = "Cancel";
+        page.btnPrimaryClickListener = v -> {
+            installCancel();
+        };
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageInstallComplete() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_restart;
+        page.strStatus = "Install complete!";
+        page.btnPrimaryText = "Reboot";
+        page.btnPrimaryClickListener = v -> {
+            reboot();
+        };
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private void refresh() {
+        if (mUpdaterController == null) {
+            Log.e(TAG, "mUpdaterController is null during update check");
+            return;
         }
 
-        //Do an automatic update check every startup
-        downloadUpdatesList(false);
+        setPage(pageUpdateChecking());
+        updateCheck = true;
+
+        new Thread(() -> {
+            try  {
+                String urlOTA = Utils.getServerURL(this);
+                URL url = new URL(urlOTA);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"), 8);
+                String jsonOTA = "";
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                    jsonOTA += line + "\n";
+                }
+
+                JSONObject obj = new JSONObject(jsonOTA);
+                if (obj.isNull("version")) {
+                    Log.d(TAG, "Failed to find version in updates JSON");
+                    return;
+                }
+
+                try {
+                    update = Utils.parseJsonUpdate(obj);
+                    updateId = update.getDownloadId();
+                    mUpdaterController.addUpdate(update);
+
+                    List<String> updatesOnline = new ArrayList<>();
+                    updatesOnline.add(update.getDownloadId());
+                    mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error while parsing updates JSON: " + e);
+                    exception = e;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error while downloading updates JSON: " + e);
+                exception = e;
+            }
+        }).run();
+        updateCheck = false;
+
+        if (exception != null) {
+            setPage(pageError(exception.toString()));
+            return;
+        }
+
+        if (updateId != "" && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
+            //fake the changelog for now
+            htmlChangelog = LoadAssetData("changelog.html");
+            setPage(pageUpdateAvailable());
+        } else {
+            Page page = pageCheckForUpdates();
+            page.strStatus = "No updates found";
+            setPage(page);
+        }
+    }
+
+    private void download() {
+        setPage(pageUpdateDownloading());
+        if (mUpdaterController.isDownloading(updateId)) {
+            mUpdaterController.pauseDownload(updateId);
+            mUpdaterController.deleteUpdate(updateId);
+        }
+        mUpdaterController.startDownload(updateId);
+    }
+
+    private void downloadPause() {
+        Page page = pageUpdateDownloading();
+        page.btnPrimaryText = "Resume";
+        page.btnPrimaryClickListener = v -> {
+            setPage(pageUpdateDownloading());
+            mUpdaterController.resumeDownload(updateId);
+        };
+        setPage(page);
+    }
+
+    private void downloadCancel() {
+        mUpdaterController.pauseDownload(updateId);
+        mUpdaterController.deleteUpdate(updateId);
+        setPage(pageUpdateAvailable());
+    }
+
+    private void install() {
+        setPage(pageUpdateInstalling());
+        Utils.triggerUpdate(this, updateId);
+    }
+
+    private void installCancel() {
+        Intent intent = new Intent(this, UpdaterService.class);
+        intent.setAction(UpdaterService.ACTION_INSTALL_STOP);
+        this.startService(intent);
+    }
+
+    private void reboot() {
+        PowerManager pm = this.getSystemService(PowerManager.class);
+        pm.reboot(null);
     }
 
     @Override
@@ -194,299 +441,40 @@ public class UpdatesActivity extends UpdatesListActivity {
         super.onStop();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_toolbar, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        if (itemId == R.id.menu_preferences) {
-            showPreferencesDialog();
-            return true;
-        } else if (itemId == R.id.menu_show_changelog) {
-            Intent openUrl = new Intent(Intent.ACTION_VIEW,
-                    Uri.parse(Utils.getChangelogURL(this)));
-            startActivity(openUrl);
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        onBackPressed();
-        return true;
-    }
-
     private final ServiceConnection mConnection = new ServiceConnection() {
-
         @Override
         public void onServiceConnected(ComponentName className,
-                IBinder service) {
+                                       IBinder service) {
             UpdaterService.LocalBinder binder = (UpdaterService.LocalBinder) service;
             mUpdaterService = binder.getService();
-            mAdapter.setUpdaterController(mUpdaterService.getUpdaterController());
-            getUpdatesList();
+            mUpdaterController = mUpdaterService.getUpdaterController();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            mAdapter.setUpdaterController(null);
+            mUpdaterController = null;
             mUpdaterService = null;
-            mAdapter.notifyDataSetChanged();
         }
     };
 
-    private void loadUpdatesList(File jsonFile, boolean manualRefresh)
-            throws IOException, JSONException {
-        if (mUpdaterService == null) {
-            return; //Make sure the updater service is ready first
-        }
-        Log.d(TAG, "Adding remote updates");
-        UpdaterController controller = mUpdaterService.getUpdaterController();
+    public String LoadAssetData(String inFile) {
+        String contents = "";
 
-        List<UpdateInfo> updates = Utils.parseJson(jsonFile, true);
-        List<String> updatesOnline = new ArrayList<>();
-        for (UpdateInfo update : updates) {
-            controller.addUpdate(update);
-            updatesOnline.add(update.getDownloadId());
-        }
-        controller.setUpdatesAvailableOnline(updatesOnline, true);
-
-        List<String> updateIds = new ArrayList<>();
-        List<UpdateInfo> sortedUpdates = controller.getUpdates();
-        if (sortedUpdates.isEmpty()) {
-            setStatus(R.string.snack_no_updates_found);
-            findViewById(R.id.refreshbtn).setVisibility(View.VISIBLE);
-            findViewById(R.id.recycler_view).setVisibility(View.GONE);
-            findViewById(R.id.header_last_check).setVisibility(View.VISIBLE);
-            findViewById(R.id.header_build_version).setVisibility(View.VISIBLE);
-            findViewById(R.id.header_build_security_patch).setVisibility(View.VISIBLE);
-            findViewById(R.id.header_build_date).setVisibility(View.VISIBLE);
-        } else {
-            setStatus(R.string.snack_updates_found);
-            refreshAnimationStop();
-            findViewById(R.id.refreshbtn).setVisibility(View.GONE);
-            findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
-            findViewById(R.id.header_last_check).setVisibility(View.GONE);
-            findViewById(R.id.header_build_version).setVisibility(View.GONE);
-            findViewById(R.id.header_build_security_patch).setVisibility(View.GONE);
-            findViewById(R.id.header_build_date).setVisibility(View.GONE);
-            sortedUpdates.sort((u1, u2) -> Long.compare(u2.getTimestamp(), u1.getTimestamp()));
-            for (UpdateInfo update : sortedUpdates) {
-                updateIds.add(update.getDownloadId());
-            }
-            mAdapter.setData(updateIds);
-            mAdapter.notifyDataSetChanged();
-        }
-    }
-
-    private void getUpdatesList() {
-        File jsonFile = Utils.getCachedUpdateList(this);
-        if (jsonFile.exists()) {
-            try {
-                loadUpdatesList(jsonFile, false);
-                Log.d(TAG, "Cached list parsed");
-            } catch (IOException | JSONException e) {
-                Log.e(TAG, "Error while parsing json list", e);
-            }
-        } else {
-            downloadUpdatesList(false);
-        }
-    }
-
-    private void processNewJson(File json, File jsonNew, boolean manualRefresh) {
-        setStatus(R.string.list_checking_updates);
         try {
-            loadUpdatesList(jsonNew, manualRefresh);
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            long millis = System.currentTimeMillis();
-            preferences.edit().putLong(Constants.PREF_LAST_UPDATE_CHECK, millis).apply();
-            updateLastCheckedString();
-            if (json.exists() && Utils.isUpdateCheckEnabled(this) &&
-                    Utils.checkForNewUpdates(json, jsonNew)) {
-                UpdatesCheckReceiver.updateRepeatingUpdatesCheck(this);
+            Context context = this.getApplicationContext();
+            InputStream file = context.getAssets().open(inFile);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(file));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                if (contents != "")
+                    contents += "\n";
+                contents += line;
             }
-            // In case we set a one-shot check because of a previous failure
-            UpdatesCheckReceiver.cancelUpdatesCheck(this);
-            //noinspection ResultOfMethodCallIgnored
-            jsonNew.renameTo(json);
-        } catch (IOException | JSONException e) {
-            Log.e(TAG, "Could not read json", e);
-            setStatus(R.string.snack_updates_check_failed);
-        }
-    }
-
-    private void downloadUpdatesList(final boolean manualRefresh) {
-        final File jsonFile = Utils.getCachedUpdateList(this);
-        final File jsonFileTmp = new File(jsonFile.getAbsolutePath() + UUID.randomUUID());
-        String url = Utils.getServerURL(this);
-        Log.d(TAG, "Checking " + url);
-
-        DownloadClient.DownloadCallback callback = new DownloadClient.DownloadCallback() {
-            @Override
-            public void onFailure(final boolean cancelled) {
-                Log.e(TAG, "Could not download updates list");
-                runOnUiThread(() -> {
-                    if (!cancelled) {
-                        setStatus(R.string.snack_updates_check_failed);
-                    }
-                    refreshAnimationStop();
-                });
-            }
-
-            @Override
-            public void onResponse(DownloadClient.Headers headers) {
-            }
-
-            @Override
-            public void onSuccess() {
-                runOnUiThread(() -> {
-                    Log.d(TAG, "List downloaded");
-                    processNewJson(jsonFile, jsonFileTmp, manualRefresh);
-                    refreshAnimationStop();
-                });
-            }
-        };
-
-        final DownloadClient downloadClient;
-        try {
-            downloadClient = new DownloadClient.Builder()
-                    .setUrl(url)
-                    .setDestination(jsonFileTmp)
-                    .setDownloadCallback(callback)
-                    .build();
-        } catch (IOException exception) {
-            Log.e(TAG, "Could not build download client");
-            setStatus(R.string.snack_updates_check_failed);
-            return;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
-        refreshAnimationStart();
-        downloadClient.start();
-    }
-
-    private void updateLastCheckedString() {
-        final SharedPreferences preferences =
-                PreferenceManager.getDefaultSharedPreferences(this);
-        long lastCheck = preferences.getLong(Constants.PREF_LAST_UPDATE_CHECK, -1) / 1000;
-        TextView headerLastCheck = findViewById(R.id.header_last_check);
-        if (lastCheck == 0) {
-            headerLastCheck.setText(R.string.header_last_updates_check_never);
-        } else {
-            String lastCheckString = getString(R.string.header_last_updates_check,
-                    StringGenerator.getDateLocalized(this, DateFormat.LONG, lastCheck),
-                    StringGenerator.getTimeLocalized(this, lastCheck));
-            headerLastCheck.setText(lastCheckString);
-        }
-    }
-
-    private void handleDownloadStatusChange(String downloadId) {
-        UpdateInfo update = mUpdaterService.getUpdaterController().getUpdate(downloadId);
-        switch (update.getStatus()) {
-            case PAUSED_ERROR:
-                setStatus(R.string.snack_download_failed);
-                break;
-            case VERIFICATION_FAILED:
-                setStatus(R.string.snack_download_verification_failed);
-                break;
-            case VERIFIED:
-                setStatus(R.string.snack_download_verified);
-                break;
-        }
-    }
-
-    @Override
-    public void exportUpdate(UpdateInfo update) {
-        mToBeExported = update;
-
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("application/zip");
-        intent.putExtra(Intent.EXTRA_TITLE, update.getName());
-
-        mExportUpdate.launch(intent);
-    }
-
-    private void exportUpdate(Uri uri) {
-        Intent intent = new Intent(this, ExportUpdateService.class);
-        intent.setAction(ExportUpdateService.ACTION_START_EXPORTING);
-        intent.putExtra(ExportUpdateService.EXTRA_SOURCE_FILE, mToBeExported.getFile());
-        intent.putExtra(ExportUpdateService.EXTRA_DEST_URI, uri);
-        startService(intent);
-    }
-
-    public void setStatus(int stringId) {
-        TextView headerStatus = findViewById(R.id.header_status);
-        headerStatus.setText(getString(stringId));
-    }
-
-    private void refreshAnimationStart() {
-        if (!mIsTV) {
-            if (mRefreshIconView == null) {
-                mRefreshIconView = findViewById(R.id.refreshbtn);
-            }
-            if (mRefreshIconView != null) {
-                mRefreshAnimation.setRepeatCount(Animation.INFINITE);
-                mRefreshIconView.startAnimation(mRefreshAnimation);
-                mRefreshIconView.setEnabled(false);
-            }
-        } else {
-            findViewById(R.id.recycler_view).setVisibility(View.GONE);
-            findViewById(R.id.no_new_updates_view).setVisibility(View.GONE);
-            findViewById(R.id.refresh_progress).setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void refreshAnimationStop() {
-        if (!mIsTV) {
-            if (mRefreshIconView != null) {
-                mRefreshAnimation.setRepeatCount(0);
-                mRefreshIconView.setEnabled(true);
-            }
-        } else {
-            findViewById(R.id.refresh_progress).setVisibility(View.GONE);
-            if (mAdapter.getItemCount() > 0) {
-                findViewById(R.id.recycler_view).setVisibility(View.VISIBLE);
-            } else {
-                findViewById(R.id.no_new_updates_view).setVisibility(View.VISIBLE);
-            }
-        }
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    private void showPreferencesDialog() {
-        View view = LayoutInflater.from(this).inflate(R.layout.preferences_dialog, null);
-        Spinner autoCheckInterval = view.findViewById(R.id.preferences_auto_updates_check_interval);
-        SwitchCompat autoDelete = view.findViewById(R.id.preferences_auto_delete_updates);
-        SwitchCompat dataWarning = view.findViewById(R.id.preferences_mobile_data_warning);
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        autoCheckInterval.setSelection(Utils.getUpdateCheckSetting(this));
-        autoDelete.setChecked(prefs.getBoolean(Constants.PREF_AUTO_DELETE_UPDATES, false));
-        dataWarning.setChecked(prefs.getBoolean(Constants.PREF_MOBILE_DATA_WARNING, true));
-
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.menu_preferences)
-                .setView(view)
-                .setOnDismissListener(dialogInterface -> {
-                    prefs.edit()
-                            .putInt(Constants.PREF_AUTO_UPDATES_CHECK_INTERVAL,
-                                    autoCheckInterval.getSelectedItemPosition())
-                            .putBoolean(Constants.PREF_AUTO_DELETE_UPDATES, autoDelete.isChecked())
-                            .putBoolean(Constants.PREF_MOBILE_DATA_WARNING, dataWarning.isChecked())
-                            .apply();
-
-                    if (Utils.isUpdateCheckEnabled(this)) {
-                        UpdatesCheckReceiver.scheduleRepeatingUpdatesCheck(this);
-                    } else {
-                        UpdatesCheckReceiver.cancelRepeatingUpdatesCheck(this);
-                        UpdatesCheckReceiver.cancelUpdatesCheck(this);
-                    }
-                })
-                .show();
+        return contents;
     }
 }

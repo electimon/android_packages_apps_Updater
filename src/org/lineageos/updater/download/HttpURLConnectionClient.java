@@ -160,7 +160,10 @@ public class HttpURLConnectionClient implements DownloadClient {
                 if (mSpeed == -1) {
                     mSpeed = curSpeed;
                 } else {
+                    final long mLastSpeed = mSpeed;
                     mSpeed = ((mSpeed * 3) + curSpeed) / 4;
+                    final double mSmoothing = 0.005;
+                    mSpeed = (long) (mSmoothing * mLastSpeed + (1-mSmoothing) * mSpeed);
                 }
 
                 mLastMillis = millis;
