@@ -100,8 +100,10 @@
     <string name="ongoing_channel_title">Ongoing downloads</string>
     <string name="update_failed_channel_title">Update failed</string>
 
-    // New-Strings
-    // TO-DO: Clean-up the old resources
+    <!--
+         New-Strings
+         TO-DO: Clean-up the old resources
+    -->
     <string name="system_update_activity_attempt_install_later_text">Update cannot be installed at the current moment, please try again later.</string>
     <string name="system_update_almost_done">System update almost done</string>
     <string name="system_update_check_now_button_text">Check for update</string>
