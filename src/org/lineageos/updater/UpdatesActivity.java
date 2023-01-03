@@ -16,6 +16,7 @@ import android.os.PowerManager;
 import android.os.StrictMode;
 import android.text.format.Formatter;
 import android.util.Log;
+import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -42,63 +43,122 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class UpdatesActivity extends AppCompatActivity {
-    private static final String TAG = "Updates";
+    //Android flags
+    public static final String TAG = "Updates";
     private Exception exception;
     private UpdatesActivity activity;
 
+    //The map of the hour, "pageId" = Page
+    private HashMap<String, Page> pages = new HashMap<String, Page>();
 
-    private ImageView headerIcon;
-    private TextView headerTitle;
-    private TextView headerStatus;
-    private Button btnPrimary;
-    private Button btnSecondary;
-    private Button btnExtra;
-    private WebView webView;
-    private TextView progressText;
-    private ProgressBar progressBar;
+    //Layout to render the pages to
+    public String pageIdActive;
+    public ImageView headerIcon;
+    public TextView headerTitle;
+    public TextView headerStatus;
+    public Button btnPrimary;
+    public Button btnSecondary;
+    public Button btnExtra;
+    public TextView progressText;
+    public ProgressBar progressBar;
+    public WebView webView;
+    public String htmlContentLast = "";
 
-    private int htmlColor;
+    //Special details
+    private UpdateInfo update;
+    private String updateId = "";
+    private Boolean updateCheck = false;
+    private int htmlColor = 0;
     private String htmlCurrentBuild = "";
     private String htmlChangelog = "";
 
+    //Android services
     private UpdaterService mUpdaterService;
     private BroadcastReceiver mBroadcastReceiver;
     private UpdaterController mUpdaterController;
 
-    private UpdateInfo update;
-    private String updateId = "";
-    private Boolean updateCheck;
-
-    private class PageHandler extends AsyncTask<Void, Void, Page> {
+    private class PageHandler extends AsyncTask<Boolean, Void, String> {
         @Override
-        protected Page doInBackground(Void... voids) {
-            if (updateId != "" && update != null) {
+        protected String doInBackground(Boolean... bools) {
+            if (!Objects.equals(updateId, "") && update != null) {
                 if (update.getStatus() == UpdateStatus.STARTING) {
-                    return pageUpdateStarting();
+                    return "updateStarting";
                 } else if (mUpdaterController.isDownloading(updateId)) {
-                    return pageUpdateDownloading();
+                    return "updateDownloading";
                 } else if (mUpdaterController.isInstallingUpdate(updateId) || update.getStatus() == UpdateStatus.INSTALLING) {
-                    return pageUpdateInstalling();
+                    return "updateInstalling";
                 } else if (mUpdaterController.isVerifyingUpdate(updateId)) {
-                    return pageUpdateVerifying();
+                    return "updateVerifying";
                 } else if (mUpdaterController.isWaitingForReboot(updateId)) {
-                    return pageInstallComplete();
-                } else if (updateCheck) {
-                    return pageUpdateChecking();
+                    return "updateInstalled";
                 }
+            } else if (bools.length > 0 && bools[0]) {
+                return "updateChecking";
             }
-            return pageCheckForUpdates();
+            return "checkForUpdates";
         }
 
         @Override
-        protected void onPostExecute(Page result) {
+        protected void onPostExecute(String result) {
             super.onPostExecute(result);
-            setPage(result);
+            renderPage(result);
         }
+    }
+
+    public Page getPage(String pageId) {
+        Log.d(TAG, "Get page: " + pageId);
+        return pages.get(pageId);
+    }
+    public void renderPage(String pageId) {
+        Log.d(TAG, "Render page: " + pageId);
+
+        if (!Objects.equals(pageIdActive, "") && !Objects.equals(pageIdActive, pageId)) {
+            Page pageLast = getPage(pageIdActive);
+            if (pageLast != null) {
+                pageLast.runnableRan = false;
+            }
+        }
+
+        Page page = getPage(pageId);
+        if (page == null) {
+            page = getPage("error");
+            page.htmlContent = "Unknown pageId: " + pageId;
+        }
+
+        page.render(this);
+        if (!page.runnableRan) {
+            page.runnableRan = true;
+            page.runnable.run();
+        }
+        pageIdActive = pageId;
+    }
+    public void renderPageCustom(String pageId, Page page) {
+        registerPage(pageId, page);
+        renderPage(pageId);
+    }
+    private void registerPage(String pageId, Page page) {
+        Log.d(TAG, "Register page: " + pageId);
+        pages.put(pageId, page);
+    }
+    //A helpful wrapper that refreshes all of our pages for major content updates
+    private void registerPages() {
+        registerPage("error", pageError());
+        registerPage("checkForUpdates", pageCheckForUpdates());
+        registerPage("updateChecking", pageUpdateChecking());
+        registerPage("updateAvailable", pageUpdateAvailable());
+        registerPage("updateStarting", pageUpdateStarting());
+        registerPage("updateDownloading", pageUpdateDownloading());
+        registerPage("updatePaused", pageUpdatePaused());
+        registerPage("updateRetryDownload", pageUpdateRetryDownload());
+        registerPage("updateVerifying", pageUpdateVerifying());
+        registerPage("updateInstalling", pageUpdateInstalling());
+        registerPage("updateInstalled", pageUpdateInstalled());
     }
 
     @Override
@@ -109,6 +169,17 @@ public class UpdatesActivity extends AppCompatActivity {
         //Allow doing stupid things like running network operations on the main activity thread
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
+        //Prepare the environment before processing
+        htmlColor = this.getResources().getColor(R.color.theme_accent3, this.getTheme());
+        htmlCurrentBuild = String.format("%s<br />%s<br />%s",
+                getString(R.string.header_android_version, Build.VERSION.RELEASE),
+                getString(R.string.header_build_security_patch, BuildInfoUtils.getBuildSecurityPatchTimestamp()),
+                getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
+                        DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp())));
+
+        //Import and fill in the pages for the first time
+        registerPages();
 
         activity = this;
         headerIcon = findViewById(R.id.header_icon);
@@ -125,27 +196,28 @@ public class UpdatesActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
-                if (downloadId == "") {
+                if (Objects.equals(downloadId, "")) {
+                    Log.d(TAG, "Received intent without downloadId?");
                     return;
                 }
                 update = mUpdaterService.getUpdaterController().getUpdate(downloadId);
 
                 if (UpdaterController.ACTION_UPDATE_STATUS.equals(intent.getAction())) {
-                    Page page = pageUpdateRetryDownload();
                     switch (update.getStatus()) {
                         case PAUSED_ERROR:
-                            setPage(page);
+                            renderPage("updateRetryDownload");
                             break;
                         case VERIFICATION_FAILED:
+                            Page page = getPage("updateRetryDownload");
                             page.strStatus = getString(R.string.snack_download_verification_failed);
-                            setPage(page);
+                            renderPage("updateRetryDownload");
                             break;
                         case VERIFIED:
                             install();
                             break;
                     }
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
-                    Page page = pageUpdateDownloading();
+                    Page page = getPage("updateDownloading");
 
                     String downloaded = Formatter.formatShortFileSize(activity, update.getFile().length());
                     String total = Formatter.formatShortFileSize(activity, update.getFileSize());
@@ -159,46 +231,55 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep += " - " + etaString;
                     }
 
-                    setPage(page);
+                    renderPage("updateDownloading");
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
-                    setPage(pageUpdateInstalling());
+                    Page page = getPage("updateInstalling");
+
+                    page.progPercent = update.getInstallProgress();
+                    if (mUpdaterController.isInstallingABUpdate()) {
+                        if (update.getFinalizing()) {
+                            page.progStep = "Re-optimizing your apps...";
+                        } else {
+                            page.progStep = "Installing the update...";
+                        }
+                    } else {
+                        page.progStep = "Preparing installation...";
+                    }
+
+                    renderPage("updateInstalling");
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
-                    setPage(pageCheckForUpdates());
+                    renderPage("checkForUpdates");
                 } else {
-                    setPage(pageError("Unknown intent: " + intent.getAction()));
+                    Page page = getPage("error");
+                    page.htmlContent = "Unknown intent: " + intent.getAction();
+                    renderPage("error");
                 }
             }
         };
 
-        htmlColor = this.getResources().getColor(R.color.theme_accent3, this.getTheme());
-        htmlCurrentBuild = String.format("%s<br />%s<br />%s",
-                getString(R.string.header_android_version, Build.VERSION.RELEASE),
-                getString(R.string.header_build_security_patch, BuildInfoUtils.getBuildSecurityPatchTimestamp()),
-                getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
-                        DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp())));
-
-        new PageHandler().execute();
+        new PageHandler().execute(updateCheck);
     }
 
-    public void setPage(Page page) {
-        page.render(headerIcon, headerTitle, headerStatus, btnPrimary, btnSecondary, btnExtra, progressText, progressBar, webView);
-    }
-
-    private Page pageError(String error) {
+    private Page pageError() {
         Page page = new Page();
+        page.runnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "This is the error code!");
+            }
+        };
         page.icon = R.drawable.ic_settings;
         page.strTitle = "ERROR";
         page.strStatus = "An unhandled exception has occurred";
         page.btnPrimaryText = "Try again";
         page.btnPrimaryClickListener = v -> {
-            setPage(pageCheckForUpdates());
+            renderPage("checkForUpdates");
         };
         page.btnSecondaryText = "Exit";
         page.btnSecondaryClickListener = v -> {
             this.finish();
             System.exit(1);
         };
-        page.htmlContent = error.toString() + "<p><img src='file:///android_asset/error.gif' width='100%' /></p>";
         page.htmlColor = htmlColor;
         return page;
     }
@@ -213,7 +294,9 @@ public class UpdatesActivity extends AppCompatActivity {
         };
         page.btnExtraText = "ERROR";
         page.btnExtraClickListener = v -> {
-            setPage(pageError("nothing happened this time lol"));
+            Page pageErr = getPage("error");
+            pageErr.htmlContent = "nothing happened this time either lmao";
+            renderPage("error");
         };
         page.htmlContent = htmlCurrentBuild;
         page.htmlColor = htmlColor;
@@ -267,6 +350,28 @@ public class UpdatesActivity extends AppCompatActivity {
         return page;
     }
 
+    private Page pageUpdatePaused() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_pause;
+        page.strStatus = "Download paused";
+        page.btnPrimaryText = "Resume";
+        page.btnPrimaryClickListener = v -> {
+            downloadResume();
+        };
+        page.btnSecondaryText = "Cancel";
+        page.btnSecondaryClickListener = v -> {
+            downloadCancel();
+        };
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+
+        Page pageDownload = getPage("updateDownloading");
+        page.progStep = pageDownload.progStep;
+        page.progPercent = pageDownload.progPercent;
+
+        return page;
+    }
+
     private Page pageUpdateRetryDownload() {
         Page page = pageUpdateDownloading();
         page.strStatus = getString(R.string.snack_download_failed);
@@ -290,16 +395,12 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_install;
         page.strStatus = "Installing...";
-        page.btnPrimaryText = "Cancel";
-        page.btnPrimaryClickListener = v -> {
-            installCancel();
-        };
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
     }
 
-    private Page pageInstallComplete() {
+    private Page pageUpdateInstalled() {
         Page page = new Page();
         page.icon = R.drawable.ic_restart;
         page.strStatus = "Install complete!";
@@ -315,10 +416,16 @@ public class UpdatesActivity extends AppCompatActivity {
     private void refresh() {
         if (mUpdaterController == null) {
             Log.e(TAG, "mUpdaterController is null during update check");
+            renderPage("checkForUpdates");
+            return;
+        }
+        if (update != null && update.getStatus() != UpdateStatus.UNKNOWN) {
+            Log.d(TAG, "Skipping update check during update operation");
             return;
         }
 
-        setPage(pageUpdateChecking());
+        Log.d(TAG, "Checking for updates");
+        renderPage("updateChecking");
         updateCheck = true;
 
         new Thread(() -> {
@@ -361,23 +468,28 @@ public class UpdatesActivity extends AppCompatActivity {
         updateCheck = false;
 
         if (exception != null) {
-            setPage(pageError(exception.toString()));
+            Page page = getPage("error");
+            page.htmlContent = "Failed to refresh updates: " + exception.toString();
+            renderPage("error");
             return;
         }
 
         if (updateId != "" && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
             //fake the changelog for now
             htmlChangelog = LoadAssetData("changelog.html");
-            setPage(pageUpdateAvailable());
+            registerPages(); //Reload everything that might display the changelog
+            renderPage("updateAvailable");
         } else {
-            Page page = pageCheckForUpdates();
-            page.strStatus = "No updates found";
-            setPage(page);
+            renderPage("checkForUpdates");
         }
     }
 
     private void download() {
-        setPage(pageUpdateDownloading());
+        Page page = getPage("updateDownloading");
+        page.progPercent = 0;
+        page.progStep = "Waiting to download...";
+        renderPage("updateDownloading");
+
         if (mUpdaterController.isDownloading(updateId)) {
             mUpdaterController.pauseDownload(updateId);
             mUpdaterController.deleteUpdate(updateId);
@@ -385,31 +497,29 @@ public class UpdatesActivity extends AppCompatActivity {
         mUpdaterController.startDownload(updateId);
     }
 
-    private void downloadPause() {
-        Page page = pageUpdateDownloading();
-        page.btnPrimaryText = "Resume";
-        page.btnPrimaryClickListener = v -> {
-            setPage(pageUpdateDownloading());
-            mUpdaterController.resumeDownload(updateId);
-        };
-        setPage(page);
-    }
-
     private void downloadCancel() {
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
-        setPage(pageUpdateAvailable());
+        renderPage("updateAvailable");
+    }
+
+    private void downloadPause() {
+        mUpdaterController.pauseDownload(updateId);
+        Page pagePaused = getPage("updatePaused");
+        Page pageDownload = getPage("updateDownloading");
+        pagePaused.progPercent = pageDownload.progPercent;
+        pagePaused.progStep = pageDownload.progStep;
+        renderPage("updatePaused");
+    }
+
+    private void downloadResume() {
+        renderPage("updateDownloading");
+        mUpdaterController.resumeDownload(updateId);
     }
 
     private void install() {
-        setPage(pageUpdateInstalling());
+        renderPage("updateInstalling");
         Utils.triggerUpdate(this, updateId);
-    }
-
-    private void installCancel() {
-        Intent intent = new Intent(this, UpdaterService.class);
-        intent.setAction(UpdaterService.ACTION_INSTALL_STOP);
-        this.startService(intent);
     }
 
     private void reboot() {
@@ -448,6 +558,9 @@ public class UpdatesActivity extends AppCompatActivity {
             UpdaterService.LocalBinder binder = (UpdaterService.LocalBinder) service;
             mUpdaterService = binder.getService();
             mUpdaterController = mUpdaterService.getUpdaterController();
+
+            //Perform an update check now that mUpdaterController is ready
+            refresh();
         }
 
         @Override
