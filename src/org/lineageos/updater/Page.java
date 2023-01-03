@@ -50,7 +50,7 @@ public class Page {
         context.progressBar.setVisibility(View.GONE);
         context.webView.setVisibility(View.GONE);
 
-        context.progressBar.setScaleY(1.8f);
+        context.progressBar.setScaleY(1.0f);
 
         if (icon != 0) {
             context.headerIcon.setImageResource(icon);

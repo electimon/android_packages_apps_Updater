@@ -286,7 +286,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageCheckForUpdates() {
         Page page = new Page();
-        page.icon = R.drawable.ic_menu_refresh;
+        page.icon = R.drawable.ic_google_system_update;
         page.strStatus = "Your system is up to date";
         page.btnPrimaryText = "Check for updates";
         page.btnPrimaryClickListener = v -> {
