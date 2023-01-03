@@ -5,10 +5,4 @@
     <color name="theme_accent">@android:color/system_accent2_500</color>
     <color name="theme_accent2">@android:color/system_accent1_700</color>
     <color name="theme_accent3">@android:color/system_neutral2_500</color>
-
-    <color name="inverted">#212121</color>
-    <color name="background">@color/theme_primary</color>
-    <color name="tv_background">@color/theme_primary</color>
-    <color name="tv_card_background">@color/theme_primary</color>
-    <color name="ic_background">#333333</color>
 </resources>
