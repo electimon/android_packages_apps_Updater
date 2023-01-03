@@ -112,7 +112,7 @@ public class Page {
                 int colorTextB = Color.blue(htmlColor);
                 hexColor = String.format("; color: #%02x%02x%02x", colorTextR, colorTextG, colorTextB);
             }
-            String html = "<html><head><style>body { font-size: light; text-align: justify" + hexColor + "; }</style></head><body>" + htmlContent + "</body></html>";
+            String html = "<html><head><style>body { font-size: light" + hexColor + "; }</style></head><body>" + htmlContent + "</body></html>";
             if (!html.equals(context.htmlContentLast)) {
                 context.htmlContentLast = html;
                 Log.d(UpdatesActivity.TAG, "Last HTML didn't match, using new HTML: " +     context.htmlContentLast);
