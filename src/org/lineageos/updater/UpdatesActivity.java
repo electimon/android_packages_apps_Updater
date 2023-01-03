@@ -197,7 +197,11 @@ public class UpdatesActivity extends AppCompatActivity {
             public void onReceive(Context context, Intent intent) {
                 String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
                 if (Objects.equals(downloadId, "")) {
-                    Log.d(TAG, "Received intent without downloadId?");
+                    Log.e(TAG, "Received intent " + intent.getAction() + " without downloadId?");
+                    return;
+                }
+                if (mUpdaterService == null) {
+                    Log.e(TAG, "Received intent " + intent.getAction() + " without mUpdaterService?");
                     return;
                 }
                 update = mUpdaterService.getUpdaterController().getUpdate(downloadId);
@@ -224,11 +228,11 @@ public class UpdatesActivity extends AppCompatActivity {
                     String percentage = NumberFormat.getPercentInstance().format(update.getProgress() / 100.f);
 
                     page.progPercent = update.getProgress();
-                    page.progStep = percentage + " - " + downloaded + " / " + total;
+                    page.progStep = percentage + " • " + downloaded + " / " + total;
 
                     if (update.getEta() > 0) {
                         CharSequence etaString = StringGenerator.formatETA(activity, update.getEta() * 1000);
-                        page.progStep += " - " + etaString;
+                        page.progStep += " • " + etaString;
                     }
 
                     renderPage("updateDownloading");
@@ -314,7 +318,7 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
         page.strStatus = "System update available";
-        page.btnPrimaryText = "Download";
+        page.btnPrimaryText = "Download & Install";
         page.btnPrimaryClickListener = v -> {
             download();
         };

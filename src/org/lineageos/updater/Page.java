@@ -46,7 +46,7 @@ public class Page {
         context.btnPrimary.setVisibility(View.GONE);
         context.btnSecondary.setVisibility(View.GONE);
         context.btnExtra.setVisibility(View.GONE);
-        context.progressText.setVisibility(View.GONE);
+        context.progressText.setVisibility(View.INVISIBLE); //Good separator between headerStatus and webView
         context.progressBar.setVisibility(View.GONE);
         context.webView.setVisibility(View.GONE);
 
@@ -71,16 +71,28 @@ public class Page {
             context.btnPrimary.setText(btnPrimaryText);
             setBtnClickListener(context.btnPrimary, btnPrimaryClickListener);
             context.btnPrimary.setVisibility(View.VISIBLE);
+            if (Objects.equals(btnSecondaryText, ""))
+                context.btnSecondary.setVisibility(View.INVISIBLE);
+            if (Objects.equals(btnExtraText, ""))
+                context.btnExtra.setVisibility(View.INVISIBLE);
         }
         if (!Objects.equals(btnSecondaryText, "") && btnSecondaryClickListener != null) {
             context.btnSecondary.setText(btnSecondaryText);
             setBtnClickListener(context.btnSecondary, btnSecondaryClickListener);
             context.btnSecondary.setVisibility(View.VISIBLE);
+            if (Objects.equals(btnPrimaryText, ""))
+                context.btnPrimary.setVisibility(View.INVISIBLE);
+            if (Objects.equals(btnExtraText, ""))
+                context.btnExtra.setVisibility(View.INVISIBLE);
         }
         if (!Objects.equals(btnExtraText, "") && btnExtraClickListener != null) {
             context.btnExtra.setText(btnExtraText);
             setBtnClickListener(context.btnExtra, btnExtraClickListener);
             context.btnExtra.setVisibility(View.VISIBLE);
+            if (Objects.equals(btnPrimaryText, ""))
+                context.btnPrimary.setVisibility(View.INVISIBLE);
+            if (Objects.equals(btnSecondaryText, ""))
+                context.btnSecondary.setVisibility(View.INVISIBLE);
         }
 
         context.progressText.setText(progStep);
