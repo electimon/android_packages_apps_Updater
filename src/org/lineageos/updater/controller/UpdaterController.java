@@ -53,7 +53,7 @@ public class UpdaterController {
 
     private static UpdaterController sUpdaterController;
 
-    private static final int MAX_REPORT_INTERVAL_MS = 1000;
+    private static final int MAX_REPORT_INTERVAL_MS = 100;
 
     private final Context mContext;
     private final LocalBroadcastManager mBroadcastManager;
@@ -235,7 +235,7 @@ public class UpdaterController {
                 }
                 final long now = SystemClock.elapsedRealtime();
                 int progress = Math.round(bytesRead * 100f / contentLength);
-                if (progress != mProgress || mLastUpdate - now > MAX_REPORT_INTERVAL_MS) {
+                if (progress != mProgress || now - mLastUpdate > MAX_REPORT_INTERVAL_MS) {
                     mProgress = progress;
                     mLastUpdate = now;
                     update.setProgress(progress);
@@ -462,7 +462,7 @@ public class UpdaterController {
     private void deleteUpdateAsync(final Update update) {
         new Thread(() -> {
             File file = update.getFile();
-            if (file.exists() && !file.delete()) {
+            if (file != null && file.exists() && !file.delete()) {
                 Log.e(TAG, "Could not delete " + file.getAbsolutePath());
             }
             mUpdatesDbHelper.removeUpdate(update.getDownloadId());

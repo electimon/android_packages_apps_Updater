@@ -112,11 +112,11 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     public Page getPage(String pageId) {
-        Log.d(TAG, "Get page: " + pageId);
+        //Log.d(TAG, "Get page: " + pageId);
         return pages.get(pageId);
     }
     public void renderPage(String pageId) {
-        Log.d(TAG, "Render page: " + pageId);
+        //Log.d(TAG, "Render page: " + pageId);
 
         if (!Objects.equals(pageIdActive, "") && !Objects.equals(pageIdActive, pageId)) {
             Page pageLast = getPage(pageIdActive);
@@ -235,7 +235,8 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep += " • " + etaString;
                     }
 
-                    renderPage("updateDownloading");
+                    if (pageIdActive == "updateDownloading")
+                        renderPage("updateDownloading");
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
                     Page page = getPage("updateInstalling");
 
@@ -250,7 +251,8 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep = "Preparing installation...";
                     }
 
-                    renderPage("updateInstalling");
+                    if (pageIdActive == "updateInstalling")
+                        renderPage("updateInstalling");
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
                     renderPage("checkForUpdates");
                 } else {
@@ -489,15 +491,22 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void download() {
+        if (mUpdaterController.isDownloading(updateId) ||
+            mUpdaterController.isInstallingUpdate(updateId) ||
+            mUpdaterController.isVerifyingUpdate(updateId) ||
+            mUpdaterController.isWaitingForReboot(updateId)
+        ) {
+            Log.e(TAG, "Tried to call download when update is already under way");
+            return;
+        }
+
         Page page = getPage("updateDownloading");
         page.progPercent = 0;
         page.progStep = "Waiting to download...";
         renderPage("updateDownloading");
 
-        if (mUpdaterController.isDownloading(updateId)) {
-            mUpdaterController.pauseDownload(updateId);
-            mUpdaterController.deleteUpdate(updateId);
-        }
+        mUpdaterController.pauseDownload(updateId);
+        mUpdaterController.deleteUpdate(updateId);
         mUpdaterController.startDownload(updateId);
     }
 
