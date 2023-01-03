@@ -219,6 +219,9 @@ public class UpdatesActivity extends AppCompatActivity {
                         case VERIFIED:
                             install();
                             break;
+                        case INSTALLED:
+                            renderPage("updateInstalled");
+                            break;
                     }
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
                     Page page = getPage("updateDownloading");
@@ -235,7 +238,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep += " • " + etaString;
                     }
 
-                    if (pageIdActive == "updateDownloading")
+                    if (pageIdActive == "updateDownloading" || pageIdActive == "checkForUpdates" || pageIdActive == "updateAvailable")
                         renderPage("updateDownloading");
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
                     Page page = getPage("updateInstalling");
@@ -251,7 +254,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep = "Preparing installation...";
                     }
 
-                    if (pageIdActive == "updateInstalling")
+                    if (pageIdActive == "updateInstalling" || pageIdActive == "checkForUpdates" || pageIdActive == "updateAvailable" || pageIdActive == "updateDownloading")
                         renderPage("updateInstalling");
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
                     renderPage("checkForUpdates");
