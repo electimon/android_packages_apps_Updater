@@ -159,6 +159,7 @@ public class UpdatesActivity extends AppCompatActivity {
         registerPage("updateVerifying", pageUpdateVerifying());
         registerPage("updateInstalling", pageUpdateInstalling());
         registerPage("updateInstalled", pageUpdateInstalled());
+        registerPage("updateInstallFailed", pageUpdateInstallFailed());
     }
 
     @Override
@@ -216,6 +217,9 @@ public class UpdatesActivity extends AppCompatActivity {
                             page.strStatus = getString(R.string.snack_download_verification_failed);
                             renderPage("updateRetryDownload");
                             break;
+                        case INSTALLATION_FAILED:
+                            renderPage("updateInstallFailed");
+                            break;
                         case VERIFIED:
                             install();
                             break;
@@ -246,12 +250,12 @@ public class UpdatesActivity extends AppCompatActivity {
                     page.progPercent = update.getInstallProgress();
                     if (mUpdaterController.isInstallingABUpdate()) {
                         if (update.getFinalizing()) {
-                            page.progStep = "Re-optimizing your apps...";
+                            page.progStep = getString(R.string.system_update_optimizing_apps);
                         } else {
-                            page.progStep = "Installing the update...";
+                            page.progStep = getString(R.string.system_update_installing_title_text);
                         }
                     } else {
-                        page.progStep = "Preparing installation...";
+                        page.progStep = getString(R.string.system_update_prepare_install);
                     }
 
                     if (pageIdActive == "updateInstalling" || pageIdActive == "checkForUpdates" || pageIdActive == "updateAvailable" || pageIdActive == "updateDownloading")
@@ -296,8 +300,8 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageCheckForUpdates() {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = "Your system is up to date";
-        page.btnPrimaryText = "Check for updates";
+        page.strStatus = getString(R.string.system_update_no_update_content_text);
+        page.btnPrimaryText = getString(R.string.system_update_check_now_button_text);
         page.btnPrimaryClickListener = v -> {
             refresh();
         };
@@ -315,15 +319,15 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageUpdateChecking() {
         Page page = new Page();
         page.icon = R.drawable.ic_menu_refresh;
-        page.strStatus = "Checking for updates...";
+        page.strStatus = getString(R.string.system_update_update_checking);
         return page;
     }
 
     private Page pageUpdateAvailable() {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = "System update available";
-        page.btnPrimaryText = "Download & Install";
+        page.strStatus = getString(R.string.system_update_update_available_title_text);
+        page.btnPrimaryText = getString(R.string.system_update_update_now);
         page.btnPrimaryClickListener = v -> {
             download();
         };
@@ -344,16 +348,15 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageUpdateDownloading() {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = "Downloading...";
-        page.btnPrimaryText = "Pause";
+        page.strStatus = getString(R.string.system_update_system_update_downloading_title_text);
+        page.btnPrimaryText = getString(R.string.system_update_download_pause_button);
         page.btnPrimaryClickListener = v -> {
             downloadPause();
         };
-        page.btnSecondaryText = "Cancel";
-        page.btnSecondaryClickListener = v -> {
+        page.btnExtraText = getString(R.string.system_update_countdown_cancel_button);
+        page.btnExtraClickListener = v -> {
             downloadCancel();
         };
-        page.progStep = "Waiting to download...";
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -361,14 +364,14 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageUpdatePaused() {
         Page page = new Page();
-        page.icon = R.drawable.ic_pause;
-        page.strStatus = "Download paused";
-        page.btnPrimaryText = "Resume";
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = getString(R.string.system_update_notification_title_update_paused);
+        page.btnPrimaryText = getString(R.string.system_update_resume_button_text);
         page.btnPrimaryClickListener = v -> {
             downloadResume();
         };
-        page.btnSecondaryText = "Cancel";
-        page.btnSecondaryClickListener = v -> {
+        page.btnExtraText = getString(R.string.system_update_countdown_cancel_button);
+        page.btnExtraClickListener = v -> {
             downloadCancel();
         };
         page.htmlContent = htmlChangelog;
@@ -383,8 +386,8 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageUpdateRetryDownload() {
         Page page = pageUpdateDownloading();
-        page.strStatus = getString(R.string.snack_download_failed);
-        page.btnPrimaryText = "Retry";
+        page.strStatus = getString(R.string.system_update_download_error_notification_title);
+        page.btnPrimaryText = getString(R.string.system_update_download_retry_button_text);
         page.btnPrimaryClickListener = v -> {
             download();
         };
@@ -394,7 +397,7 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageUpdateVerifying() {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = "Verifying...";
+        page.strStatus = getString(R.string.system_update_installing_title_text);
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -403,7 +406,7 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageUpdateInstalling() {
         Page page = new Page();
         page.icon = R.drawable.ic_install;
-        page.strStatus = "Installing...";
+        page.strStatus = getString(R.string.system_update_installing_title_text);
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -412,12 +415,25 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageUpdateInstalled() {
         Page page = new Page();
         page.icon = R.drawable.ic_restart;
-        page.strStatus = "Install complete!";
-        page.btnPrimaryText = "Reboot";
+        page.strStatus = getString(R.string.system_update_almost_done);
+        page.btnPrimaryText = getString(R.string.system_update_restart_now);
         page.btnPrimaryClickListener = v -> {
             reboot();
         };
         page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageUpdateInstallFailed() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = getString(R.string.system_update_install_failed_title_text);
+        page.btnPrimaryText = getString(R.string.system_update_update_failed);
+        page.btnPrimaryClickListener = v -> {
+            renderPage("checkForUpdates");
+        };
+        page.htmlContent = getString(R.string.system_update_activity_attempt_install_later_text);
         page.htmlColor = htmlColor;
         return page;
     }
@@ -505,7 +521,6 @@ public class UpdatesActivity extends AppCompatActivity {
 
         Page page = getPage("updateDownloading");
         page.progPercent = 0;
-        page.progStep = "Waiting to download...";
         renderPage("updateDownloading");
 
         mUpdaterController.pauseDownload(updateId);

@@ -65,17 +65,6 @@ public class Utils {
         return new File(context.getString(R.string.download_path));
     }
 
-    public static File getExportPath(Context context) {
-        File dir = new File(context.getExternalFilesDir(null),
-                context.getString(R.string.export_path));
-        if (!dir.isDirectory()) {
-            if (dir.exists() || !dir.mkdirs()) {
-                throw new RuntimeException("Could not create directory");
-            }
-        }
-        return dir;
-    }
-
     public static File getCachedUpdateList(Context context) {
         return new File(context.getCacheDir(), "updates.json");
     }
@@ -162,18 +151,6 @@ public class Utils {
         return serverUrl.replace("{device}", device)
                 .replace("{type}", type)
                 .replace("{incr}", incrementalVersion);
-    }
-
-    public static String getUpgradeBlockedURL(Context context) {
-        String device = SystemProperties.get(Constants.PROP_NEXT_DEVICE,
-                SystemProperties.get(Constants.PROP_DEVICE));
-        return context.getString(R.string.blocked_update_info_url, device);
-    }
-
-    public static String getChangelogURL(Context context) {
-        String device = SystemProperties.get(Constants.PROP_NEXT_DEVICE,
-                SystemProperties.get(Constants.PROP_DEVICE));
-        return context.getString(R.string.menu_changelog_url, device);
     }
 
     public static void triggerUpdate(Context context, String downloadId) {
