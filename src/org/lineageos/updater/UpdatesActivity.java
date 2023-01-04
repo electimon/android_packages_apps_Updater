@@ -558,6 +558,10 @@ public class UpdatesActivity extends AppCompatActivity {
             if (!Objects.equals(updateId, "") && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
                 //fake the changelog for now
                 htmlChangelog = LoadAssetData("changelog.html");
+                htmlChangelog += "<br /><br /><p>" + getString(R.string.system_update_download_notice) + "<br />";
+                htmlChangelog += "<br />Released: " + StringGenerator.getDateLocalizedUTC(activity, DateFormat.LONG, update.getTimestamp());
+                htmlChangelog += "<br />Update size: " + Formatter.formatShortFileSize(activity, update.getFileSize()) + "</p>";
+
                 Log.d(TAG, "Saving changelog");
                 prefsEditor.putString("changelog", htmlChangelog).apply();
                 registerPages(); //Reload everything that might display the changelog
