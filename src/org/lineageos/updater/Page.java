@@ -136,6 +136,11 @@ public class Page {
 
     private void setBtnClickListener(Button btn, View.OnClickListener clickListener) {
         btn.setOnClickListener(v -> {
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             if (clickListener != null) {
                 clickListener.onClick(v);
             }
