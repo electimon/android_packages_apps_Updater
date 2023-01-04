@@ -103,10 +103,8 @@ public class UpdatesActivity extends AppCompatActivity {
                         return "updateStarting";
                     } else if (mUpdaterController.isDownloading(updateId) || update.getStatus() == UpdateStatus.DOWNLOADING) {
                         return "updateDownloading";
-                    } else if (mUpdaterController.isInstallingUpdate(updateId) || update.getStatus() == UpdateStatus.INSTALLING) {
+                    } else if (mUpdaterController.isVerifyingUpdate(updateId) || mUpdaterController.isInstallingUpdate(updateId) || update.getStatus() == UpdateStatus.INSTALLING) {
                         return "updateInstalling";
-                    } else if (mUpdaterController.isVerifyingUpdate(updateId)) {
-                        return "updateVerifying";
                     } else if (mUpdaterController.isWaitingForReboot(updateId)) {
                         return "updateInstalled";
                     }
@@ -190,7 +188,6 @@ public class UpdatesActivity extends AppCompatActivity {
         registerPage("updateDownloading", pageUpdateDownloading());
         registerPage("updatePaused", pageUpdatePaused());
         registerPage("updateRetryDownload", pageUpdateRetryDownload());
-        registerPage("updateVerifying", pageUpdateVerifying());
         registerPage("updateInstalling", pageUpdateInstalling());
         registerPage("updateInstallingPaused", pageUpdateInstallingPaused());
         registerPage("updateInstalled", pageUpdateInstalled());
@@ -269,10 +266,6 @@ public class UpdatesActivity extends AppCompatActivity {
             @Override
             public void onStatusUpdate(int status, float percent) {
                 switch (status) {
-                    case UpdateEngine.UpdateStatusConstants.VERIFYING:
-                        Log.d(TAG, "UpdateEngine: VERIFYING");
-                        renderPage("updateVerifying");
-                        break;
                     case UpdateEngine.UpdateStatusConstants.DOWNLOADING:
                         Log.d(TAG, "UpdateEngine: DOWNLOADING");
                         renderPageProgress("updateInstalling", Math.round(percent * 100), getString(R.string.system_update_installing_title_text));
@@ -488,17 +481,6 @@ public class UpdatesActivity extends AppCompatActivity {
         page.btnPrimaryClickListener = v -> {
             download();
         };
-        return page;
-    }
-
-    private Page pageUpdateVerifying() {
-        Page page = new Page();
-        page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = getString(R.string.system_update_installing_title_text);
-        page.progPercent = prefs.getInt("progPercent", 0);
-        page.progStep = prefs.getString("progStep", "");
-        page.htmlContent = htmlChangelog;
-        page.htmlColor = htmlColor;
         return page;
     }
 
