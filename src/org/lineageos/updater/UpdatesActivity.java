@@ -83,9 +83,9 @@ public class UpdatesActivity extends AppCompatActivity {
     private BroadcastReceiver mBroadcastReceiver;
     private UpdaterController mUpdaterController;
 
-    private class PageHandler extends AsyncTask<Boolean, Void, String> {
+    private class PageHandler extends AsyncTask<Void, Void, String> {
         @Override
-        protected String doInBackground(Boolean... bools) {
+        protected String doInBackground(Void... voids) {
             if (!Objects.equals(updateId, "") && update != null) {
                 if (update.getStatus() == UpdateStatus.STARTING) {
                     return "updateStarting";
@@ -98,10 +98,8 @@ public class UpdatesActivity extends AppCompatActivity {
                 } else if (mUpdaterController.isWaitingForReboot(updateId)) {
                     return "updateInstalled";
                 }
-            } else if (bools.length > 0 && bools[0]) {
-                return "updateChecking";
             }
-            return "checkForUpdates";
+            return "updateChecking";
         }
 
         @Override
@@ -242,7 +240,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep += " • " + etaString;
                     }
 
-                    if (pageIdActive == "updateDownloading" || pageIdActive == "checkForUpdates" || pageIdActive == "updateAvailable")
+                    if (Objects.equals(pageIdActive, "updateDownloading") || Objects.equals(pageIdActive, "checkForUpdates") || Objects.equals(pageIdActive, "updateAvailable"))
                         renderPage("updateDownloading");
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
                     Page page = getPage("updateInstalling");
@@ -258,7 +256,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep = getString(R.string.system_update_prepare_install);
                     }
 
-                    if (pageIdActive == "updateInstalling" || pageIdActive == "checkForUpdates" || pageIdActive == "updateAvailable" || pageIdActive == "updateDownloading")
+                    if (Objects.equals(pageIdActive, "updateInstalling") || Objects.equals(pageIdActive, "checkForUpdates") || Objects.equals(pageIdActive, "updateAvailable") || Objects.equals(pageIdActive, "updateDownloading"))
                         renderPage("updateInstalling");
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
                     renderPage("checkForUpdates");
@@ -270,7 +268,7 @@ public class UpdatesActivity extends AppCompatActivity {
             }
         };
 
-        new PageHandler().execute(updateCheck);
+        new PageHandler().execute();
     }
 
     private Page pageError() {
@@ -320,6 +318,8 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_menu_refresh;
         page.strStatus = getString(R.string.system_update_update_checking);
+        page.htmlContent = htmlCurrentBuild;
+        page.htmlColor = htmlColor;
         return page;
     }
 
@@ -450,11 +450,14 @@ public class UpdatesActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "Checking for updates");
-        renderPage("updateChecking");
         updateCheck = true;
+        if (!Objects.equals(pageIdActive, "updateChecking"))
+            renderPage("updateChecking");
 
         new Thread(() -> {
             try  {
+                Thread.sleep(500);
+
                 String urlOTA = Utils.getServerURL(this);
                 URL url = new URL(urlOTA);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
@@ -489,24 +492,25 @@ public class UpdatesActivity extends AppCompatActivity {
                 Log.e(TAG, "Error while downloading updates JSON: " + e);
                 exception = e;
             }
-        }).run();
-        updateCheck = false;
 
-        if (exception != null) {
-            Page page = getPage("error");
-            page.htmlContent = "Failed to refresh updates: " + exception.toString();
-            renderPage("error");
-            return;
-        }
+            updateCheck = false;
 
-        if (updateId != "" && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
-            //fake the changelog for now
-            htmlChangelog = LoadAssetData("changelog.html");
-            registerPages(); //Reload everything that might display the changelog
-            renderPage("updateAvailable");
-        } else {
-            renderPage("checkForUpdates");
-        }
+            if (exception != null) {
+                Page page = getPage("checkForUpdates");
+                page.strStatus = "No updates found";
+                renderPage("error");
+                return;
+            }
+
+            if (!Objects.equals(updateId, "") && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
+                //fake the changelog for now
+                htmlChangelog = LoadAssetData("changelog.html");
+                registerPages(); //Reload everything that might display the changelog
+                renderPage("updateAvailable");
+            } else {
+                renderPage("checkForUpdates");
+            }
+        }).start();
     }
 
     private void download() {
@@ -590,7 +594,7 @@ public class UpdatesActivity extends AppCompatActivity {
             mUpdaterService = binder.getService();
             mUpdaterController = mUpdaterService.getUpdaterController();
 
-            //Perform an update check now that mUpdaterController is ready
+            Log.d(TAG, "Running automatic update check...");
             refresh();
         }
 
