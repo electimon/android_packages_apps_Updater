@@ -274,17 +274,18 @@ public class UpdatesActivity extends AppCompatActivity {
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
                     Page page = getPage("updateDownloading");
 
-                    String downloaded = Formatter.formatShortFileSize(activity, update.getFile().length());
-                    String total = Formatter.formatShortFileSize(activity, update.getFileSize());
-                    String percentage = NumberFormat.getPercentInstance().format(update.getProgress() / 100.f);
-
                     page.progPercent = update.getProgress();
-                    page.progStep = percentage + " • " + downloaded + " / " + total;
+                    String percentage = NumberFormat.getPercentInstance().format(page.progPercent / 100.f);
+                    String speed = Formatter.formatFileSize(activity, update.getSpeed());
 
+                    page.progStep = percentage + " • ";
                     if (update.getEta() > 0) {
                         CharSequence etaString = StringGenerator.formatETA(activity, update.getEta() * 1000);
-                        page.progStep += " • " + etaString;
+                        page.progStep += etaString;
+                    } else {
+                        page.progStep += getString(R.string.system_update_download_eta_calculating);
                     }
+                    page.progStep += " • " + speed + "/s";
 
                     if (Objects.equals(pageIdActive, "updateDownloading"))
                         renderPage("updateDownloading");
