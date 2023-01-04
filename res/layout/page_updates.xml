@@ -69,8 +69,7 @@
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/btn_secondary"
-        app:layout_constraintTop_toBottomOf="@id/webview" />
+        app:layout_constraintStart_toEndOf="@id/btn_secondary" />
 
     <Button
         android:id="@+id/btn_secondary"
