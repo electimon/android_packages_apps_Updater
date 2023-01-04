@@ -1,11 +1,13 @@
 package org.lineageos.updater;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.icu.text.DateFormat;
 import android.icu.text.NumberFormat;
 import android.os.AsyncTask;
@@ -25,7 +27,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.preference.PreferenceManager;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.lineageos.updater.controller.UpdaterController;
 import org.lineageos.updater.controller.UpdaterService;
@@ -53,12 +57,14 @@ public class UpdatesActivity extends AppCompatActivity {
     public static final String TAG = "Updates";
     private Exception exception;
     private UpdatesActivity activity;
+    private SharedPreferences prefs;
+    private SharedPreferences.Editor prefsEditor;
 
     //The map of the hour, "pageId" = Page
     private HashMap<String, Page> pages = new HashMap<String, Page>();
 
     //Layout to render the pages to
-    public String pageIdActive;
+    public String pageIdActive = "";
     public ImageView headerIcon;
     public TextView headerTitle;
     public TextView headerStatus;
@@ -73,6 +79,7 @@ public class UpdatesActivity extends AppCompatActivity {
     //Special details
     private UpdateInfo update;
     private String updateId = "";
+    private Boolean wasUpdating = false;
     private Boolean updateCheck = false;
     private int htmlColor = 0;
     private String htmlCurrentBuild = "";
@@ -87,19 +94,28 @@ public class UpdatesActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(Void... voids) {
             if (!Objects.equals(updateId, "") && update != null) {
-                if (update.getStatus() == UpdateStatus.STARTING) {
-                    return "updateStarting";
-                } else if (mUpdaterController.isDownloading(updateId)) {
-                    return "updateDownloading";
-                } else if (mUpdaterController.isInstallingUpdate(updateId) || update.getStatus() == UpdateStatus.INSTALLING) {
-                    return "updateInstalling";
-                } else if (mUpdaterController.isVerifyingUpdate(updateId)) {
-                    return "updateVerifying";
-                } else if (mUpdaterController.isWaitingForReboot(updateId)) {
-                    return "updateInstalled";
+                if (mUpdaterController != null) {
+                    if (update.getStatus() == UpdateStatus.STARTING) {
+                        return "updateStarting";
+                    } else if (mUpdaterController.isDownloading(updateId) || update.getStatus() == UpdateStatus.DOWNLOADING) {
+                        return "updateDownloading";
+                    } else if (mUpdaterController.isInstallingUpdate(updateId) || update.getStatus() == UpdateStatus.INSTALLING) {
+                        return "updateInstalling";
+                    } else if (mUpdaterController.isVerifyingUpdate(updateId)) {
+                        return "updateVerifying";
+                    } else if (mUpdaterController.isWaitingForReboot(updateId)) {
+                        return "updateInstalled";
+                    }
+                } else if (wasUpdating) {
+                    setUpdating(false);
+                    return "updateRetryDownload";
                 }
             }
-            return "updateChecking";
+
+            Log.d(TAG, "PageHandler: Update is null");
+            if (pageIdActive.isEmpty())
+                pageIdActive = "updateChecking";
+            return pageIdActive;
         }
 
         @Override
@@ -134,7 +150,12 @@ public class UpdatesActivity extends AppCompatActivity {
             page.runnableRan = true;
             page.runnable.run();
         }
+
         pageIdActive = pageId;
+        if (!Objects.equals(pageIdActive, "error")) {
+            Log.d(TAG, "Saving pageId " + pageIdActive);
+            prefsEditor.putString("pageId", pageIdActive).apply();
+        }
     }
     public void renderPageCustom(String pageId, Page page) {
         registerPage(pageId, page);
@@ -177,9 +198,6 @@ public class UpdatesActivity extends AppCompatActivity {
                 getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
                         DateFormat.LONG, BuildInfoUtils.getBuildDateTimestamp())));
 
-        //Import and fill in the pages for the first time
-        registerPages();
-
         activity = this;
         headerIcon = findViewById(R.id.header_icon);
         headerTitle = findViewById(R.id.header_title);
@@ -191,9 +209,37 @@ public class UpdatesActivity extends AppCompatActivity {
         progressText = findViewById(R.id.progress_text);
         progressBar = findViewById(R.id.progress_bar);
 
+        //Allow using shared preferences
+        prefs = PreferenceManager.getDefaultSharedPreferences(activity);
+        prefsEditor = prefs.edit();
+
+        //Load shared preferences
+        String updateJSON = prefs.getString("update", "");
+        if (!updateJSON.equals("")) {
+            try {
+                JSONObject obj = new JSONObject(updateJSON);
+                if (!obj.isNull("version")) {
+                    update = Utils.parseJsonUpdate(obj);
+                    updateId = update.getDownloadId();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            Log.d(TAG, "No saved update found");
+        }
+        wasUpdating = prefs.getBoolean("updating", false);
+        Log.d(TAG, "Loading wasUpdating: " + wasUpdating);
+        pageIdActive = prefs.getString("pageId", "updateChecking");
+        Log.d(TAG, "Loading pageId " + pageIdActive);
+        htmlChangelog = prefs.getString("changelog", "");
+        //Log.d(TAG, "Loading changelog: " + htmlChangelog);
+
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "Received intent: " + intent.getAction());
+
                 String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
                 if (Objects.equals(downloadId, "")) {
                     Log.e(TAG, "Received intent " + intent.getAction() + " without downloadId?");
@@ -240,7 +286,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep += " • " + etaString;
                     }
 
-                    if (Objects.equals(pageIdActive, "updateDownloading") || Objects.equals(pageIdActive, "checkForUpdates") || Objects.equals(pageIdActive, "updateAvailable"))
+                    if (Objects.equals(pageIdActive, "updateDownloading"))
                         renderPage("updateDownloading");
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
                     Page page = getPage("updateInstalling");
@@ -256,7 +302,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         page.progStep = getString(R.string.system_update_prepare_install);
                     }
 
-                    if (Objects.equals(pageIdActive, "updateInstalling") || Objects.equals(pageIdActive, "checkForUpdates") || Objects.equals(pageIdActive, "updateAvailable") || Objects.equals(pageIdActive, "updateDownloading"))
+                    if (Objects.equals(pageIdActive, "updateInstalling"))
                         renderPage("updateInstalling");
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
                     renderPage("checkForUpdates");
@@ -268,6 +314,10 @@ public class UpdatesActivity extends AppCompatActivity {
             }
         };
 
+        //Import and fill in the pages for the first time
+        registerPages();
+
+        //Load the initial page
         new PageHandler().execute();
     }
 
@@ -484,6 +534,9 @@ public class UpdatesActivity extends AppCompatActivity {
                     List<String> updatesOnline = new ArrayList<>();
                     updatesOnline.add(update.getDownloadId());
                     mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+
+                    Log.d(TAG, "Saving update for " + updateId);
+                    prefsEditor.putString("update", jsonOTA).apply();
                 } catch (Exception e) {
                     Log.e(TAG, "Error while parsing updates JSON: " + e);
                     exception = e;
@@ -505,7 +558,10 @@ public class UpdatesActivity extends AppCompatActivity {
             if (!Objects.equals(updateId, "") && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
                 //fake the changelog for now
                 htmlChangelog = LoadAssetData("changelog.html");
+                Log.d(TAG, "Saving changelog");
+                prefsEditor.putString("changelog", htmlChangelog).apply();
                 registerPages(); //Reload everything that might display the changelog
+
                 renderPage("updateAvailable");
             } else {
                 renderPage("checkForUpdates");
@@ -514,14 +570,11 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void download() {
-        if (mUpdaterController.isDownloading(updateId) ||
-            mUpdaterController.isInstallingUpdate(updateId) ||
-            mUpdaterController.isVerifyingUpdate(updateId) ||
-            mUpdaterController.isWaitingForReboot(updateId)
-        ) {
+        if (wasUpdating) {
             Log.e(TAG, "Tried to call download when update is already under way");
             return;
         }
+        setUpdating(true);
 
         Page page = getPage("updateDownloading");
         page.progPercent = 0;
@@ -533,12 +586,14 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void downloadCancel() {
+        setUpdating(false);
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
         renderPage("updateAvailable");
     }
 
     private void downloadPause() {
+        setUpdating(true);
         mUpdaterController.pauseDownload(updateId);
         Page pagePaused = getPage("updatePaused");
         Page pageDownload = getPage("updateDownloading");
@@ -548,18 +603,27 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void downloadResume() {
+        setUpdating(true);
         renderPage("updateDownloading");
         mUpdaterController.resumeDownload(updateId);
     }
 
     private void install() {
+        setUpdating(true);
         renderPage("updateInstalling");
         Utils.triggerUpdate(this, updateId);
     }
 
     private void reboot() {
+        setUpdating(false);
         PowerManager pm = this.getSystemService(PowerManager.class);
         pm.reboot(null);
+    }
+
+    private void setUpdating(Boolean updating) {
+        wasUpdating = updating;
+        Log.d(TAG, "Was updating: " + updating);
+        prefsEditor.putBoolean("updating", updating).apply();
     }
 
     @Override
@@ -583,6 +647,10 @@ public class UpdatesActivity extends AppCompatActivity {
         if (mUpdaterService != null) {
             unbindService(mConnection);
         }
+
+        Log.d(TAG, "Committing preferences before close");
+        prefsEditor.commit(); //Make sure we commit preferences no matter what
+
         super.onStop();
     }
 
@@ -594,8 +662,20 @@ public class UpdatesActivity extends AppCompatActivity {
             mUpdaterService = binder.getService();
             mUpdaterController = mUpdaterService.getUpdaterController();
 
-            Log.d(TAG, "Running automatic update check...");
-            refresh();
+            if (update != null) {
+                mUpdaterController.addUpdate(update);
+
+                List<String> updatesOnline = new ArrayList<>();
+                updatesOnline.add(update.getDownloadId());
+                mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+            }
+
+            if (pageIdActive.equals("updateChecking")) {
+                Log.d(TAG, "Running automatic update check...");
+                refresh();
+            } else {
+                new PageHandler().execute(); //Potentially load a different page from the initial one
+            }
         }
 
         @Override

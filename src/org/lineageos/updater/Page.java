@@ -121,7 +121,7 @@ public class Page {
                             String html = "<html><head><style>body { font-size: light" + hexColor + "; }</style></head><body>" + htmlContent + "</body></html>";
                             if (!html.equals(mContext.htmlContentLast)) {
                                 mContext.htmlContentLast = html;
-                                Log.d(UpdatesActivity.TAG, "Last HTML didn't match, using new HTML: " + mContext.htmlContentLast);
+                                //Log.d(UpdatesActivity.TAG, "Last HTML didn't match, using new HTML: " + mContext.htmlContentLast);
 
                                 mContext.webView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
                                 mContext.webView.setBackgroundColor(Color.TRANSPARENT);
