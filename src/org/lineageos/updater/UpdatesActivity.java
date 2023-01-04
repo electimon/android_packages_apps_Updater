@@ -498,7 +498,7 @@ public class UpdatesActivity extends AppCompatActivity {
             if (exception != null) {
                 Page page = getPage("checkForUpdates");
                 page.strStatus = "No updates found";
-                renderPage("error");
+                renderPage("checkForUpdates");
                 return;
             }
 
