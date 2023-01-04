@@ -282,8 +282,8 @@ public class UpdatesActivity extends AppCompatActivity {
                         break;
                     case UpdateEngine.UpdateStatusConstants.UPDATED_NEED_REBOOT:
                         Log.d(TAG, "UpdateEngine: UPDATED_NEED_REBOOT");
-                        prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
                         renderPage("updateInstalled");
+                        prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
                         break;
                 }
             }
