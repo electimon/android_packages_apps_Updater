@@ -283,7 +283,6 @@ public class UpdatesActivity extends AppCompatActivity {
                     case UpdateEngine.UpdateStatusConstants.UPDATED_NEED_REBOOT:
                         Log.d(TAG, "UpdateEngine: UPDATED_NEED_REBOOT");
                         renderPage("updateInstalled");
-                        prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
                         break;
                 }
             }
@@ -519,6 +518,13 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageUpdateInstalled() {
         Page page = new Page();
+        page.runnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Clearing pageId now that update is installed");
+                prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
+            }
+        };
         page.icon = R.drawable.ic_restart;
         page.strStatus = getString(R.string.system_update_almost_done);
         page.btnPrimaryText = getString(R.string.system_update_restart_now);
