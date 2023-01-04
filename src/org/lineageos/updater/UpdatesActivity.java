@@ -192,6 +192,7 @@ public class UpdatesActivity extends AppCompatActivity {
         registerPage("updateRetryDownload", pageUpdateRetryDownload());
         registerPage("updateVerifying", pageUpdateVerifying());
         registerPage("updateInstalling", pageUpdateInstalling());
+        registerPage("updateInstallingPaused", pageUpdateInstallingPaused());
         registerPage("updateInstalled", pageUpdateInstalled());
         registerPage("updateInstallFailed", pageUpdateInstallFailed());
     }
@@ -365,8 +366,12 @@ public class UpdatesActivity extends AppCompatActivity {
         new PageHandler().execute();
 
         //Bind the update engine
-        mUpdateEngine = new UpdateEngine();
-        mUpdateEngine.bind(mUpdateEngineCallback);
+        try {
+            mUpdateEngine = new UpdateEngine();
+            mUpdateEngine.bind(mUpdateEngineCallback);
+        } catch (Exception e) {
+            Log.i(TAG, "No update engine found");
+        }
     }
 
     private Page pageError() {
@@ -377,7 +382,7 @@ public class UpdatesActivity extends AppCompatActivity {
                 Log.d(TAG, "This is the error code!");
             }
         };
-        page.icon = R.drawable.ic_settings;
+        page.icon = R.drawable.ic_google_system_update;
         page.strTitle = "ERROR";
         page.strStatus = "An unhandled exception has occurred";
         page.btnPrimaryText = "Try again";
@@ -401,12 +406,6 @@ public class UpdatesActivity extends AppCompatActivity {
         page.btnPrimaryClickListener = v -> {
             refresh();
         };
-        page.btnExtraText = "ERROR";
-        page.btnExtraClickListener = v -> {
-            Page pageErr = getPage("error");
-            pageErr.htmlContent = "nothing happened this time either lmao";
-            renderPage("error");
-        };
         page.htmlContent = htmlCurrentBuild;
         page.htmlColor = htmlColor;
         return page;
@@ -414,10 +413,8 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageUpdateChecking() {
         Page page = new Page();
-        page.icon = R.drawable.ic_menu_refresh;
+        page.icon = R.drawable.ic_google_system_update;
         page.strStatus = getString(R.string.system_update_update_checking);
-        page.htmlContent = htmlCurrentBuild;
-        page.htmlColor = htmlColor;
         return page;
     }
 
@@ -446,7 +443,7 @@ public class UpdatesActivity extends AppCompatActivity {
     private Page pageUpdateDownloading() {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = getString(R.string.system_update_system_update_downloading_title_text);
+        page.strStatus = getString(R.string.system_update_installing_title_text);
         page.btnPrimaryText = getString(R.string.system_update_download_pause_button);
         page.btnPrimaryClickListener = v -> {
             downloadPause();
@@ -507,10 +504,27 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageUpdateInstalling() {
         Page page = new Page();
-        page.icon = R.drawable.ic_install;
+        page.icon = R.drawable.ic_google_system_update;
         page.strStatus = getString(R.string.system_update_installing_title_text);
         page.progPercent = prefs.getInt("progPercent", 0);
         page.progStep = prefs.getString("progStep", "");
+        page.btnExtraText = getString(R.string.system_update_download_pause_button);
+        page.btnExtraClickListener = v -> {
+            installPause();
+        };
+        page.htmlContent = htmlChangelog;
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
+    private Page pageUpdateInstallingPaused() {
+        Page page = pageUpdateInstalling();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = getString(R.string.system_update_installing_title_text);
+        page.btnExtraText = getString(R.string.system_update_download_resume_button);
+        page.btnExtraClickListener = v -> {
+            installResume();
+        };
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -525,8 +539,8 @@ public class UpdatesActivity extends AppCompatActivity {
                 prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
             }
         };
-        page.icon = R.drawable.ic_restart;
-        page.strStatus = getString(R.string.system_update_almost_done);
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = getString(R.string.system_update_update_available_title_text);
         page.btnPrimaryText = getString(R.string.system_update_restart_now);
         page.btnPrimaryClickListener = v -> {
             reboot();
@@ -611,7 +625,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
             if (exception != null) {
                 Page page = getPage("checkForUpdates");
-                page.strStatus = "No updates found";
+                page.strStatus = getString(R.string.system_update_no_update_content_text);
                 renderPage("checkForUpdates");
                 return;
             }
@@ -676,6 +690,18 @@ public class UpdatesActivity extends AppCompatActivity {
         setUpdating(true);
         renderPage("updateInstalling");
         Utils.triggerUpdate(this, updateId);
+    }
+
+    private void installPause() {
+        setUpdating(false);
+        renderPage("updateInstallingPaused");
+        mUpdateEngine.suspend();
+    }
+
+    private void installResume() {
+        setUpdating(true);
+        renderPage("updateInstalling");
+        mUpdateEngine.resume();
     }
 
     private void reboot() {

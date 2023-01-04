@@ -108,8 +108,8 @@
     <string name="system_update_almost_done">System update almost done</string>
     <string name="system_update_check_now_button_text">Check for update</string>
     <string name="system_update_countdown_cancel_button">Cancel install</string>
-    <string name="system_update_download_eta_calculating">Calculating...</string>
     <string name="system_update_download_error_notification_title">"Couldn't download system update"</string>
+    <string name="system_update_download_eta_calculating">Calculating...</string>
     <string name="system_update_download_pause_button">Pause</string>
     <string name="system_update_download_paused_title_text">Download paused</string>
     <string name="system_update_download_resume_button">Resume</string>
@@ -117,8 +117,9 @@
     <string name="system_update_install_failed_title_text">"Couldn't update"</string>
     <string name="system_update_installing_title_text">Installing system update…</string>
     <string name="system_update_no_update_content_text">Your system is up to date</string>
+    <string name="system_update_notification_message_pending_reboot_finish_updating">To finish updating, restart your device</string>
     <string name="system_update_notification_title_update_paused">System update paused</string>
-    <string name="system_update_optimizing_apps">Optimizing apps</string>
+    <string name="system_update_optimizing_apps">Optimizing your device, this may take a while</string>
     <string name="system_update_prepare_install">Preparing system installation…</string>
     <string name="system_update_restart_now">Restart now</string>
     <string name="system_update_resume_button_text">Resume</string>
