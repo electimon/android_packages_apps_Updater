@@ -636,13 +636,13 @@ public class UpdatesActivity extends AppCompatActivity {
         }
         setUpdating(true);
 
-        Page page = getPage("updateDownloading");
-        page.progPercent = 0;
-        renderPage("updateDownloading");
-
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
         mUpdaterController.startDownload(updateId);
+
+        Page page = getPage("updateDownloading");
+        page.progPercent = 0;
+        renderPage("updateDownloading");
     }
 
     private void downloadCancel() {
