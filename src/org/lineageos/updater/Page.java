@@ -25,7 +25,7 @@ public class Page {
     public String btnExtraText = "";
     public View.OnClickListener btnExtraClickListener;
     public String progStep = "";
-    public int progPercent = 0;
+    public int progPercent = -1;
     public String htmlContent = "";
     public int htmlColor = 0;
     public Runnable runnable = new Runnable() {
@@ -105,7 +105,7 @@ public class Page {
                             mContext.progressText.setVisibility(View.VISIBLE);
                         }
 
-                        if (progPercent > 0) {
+                        if (progPercent > -1) {
                             mContext.progressBar.setProgress(progPercent, true);
                             mContext.progressBar.setVisibility(View.VISIBLE);
                         }
