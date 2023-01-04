@@ -479,7 +479,7 @@ public class UpdatesActivity extends AppCompatActivity {
         page.strStatus = getString(R.string.system_update_download_error_notification_title);
         page.btnPrimaryText = getString(R.string.system_update_download_retry_button_text);
         page.btnPrimaryClickListener = v -> {
-            download();
+            downloadResume();
         };
         return page;
     }
