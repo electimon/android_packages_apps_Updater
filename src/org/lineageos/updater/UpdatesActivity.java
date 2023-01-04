@@ -288,8 +288,6 @@ public class UpdatesActivity extends AppCompatActivity {
                 }
             }
         };
-        mUpdateEngine = new UpdateEngine();
-        mUpdateEngine.bind(mUpdateEngineCallback);
 
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -366,6 +364,10 @@ public class UpdatesActivity extends AppCompatActivity {
 
         //Load the initial page
         new PageHandler().execute();
+
+        //Bind the update engine
+        mUpdateEngine = new UpdateEngine();
+        mUpdateEngine.bind(mUpdateEngineCallback);
     }
 
     private Page pageError() {
