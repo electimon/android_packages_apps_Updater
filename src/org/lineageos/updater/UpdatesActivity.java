@@ -16,6 +16,8 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.StrictMode;
+import android.os.UpdateEngine;
+import android.os.UpdateEngineCallback;
 import android.text.format.Formatter;
 import android.util.Log;
 import android.view.View;
@@ -89,6 +91,8 @@ public class UpdatesActivity extends AppCompatActivity {
     private UpdaterService mUpdaterService;
     private BroadcastReceiver mBroadcastReceiver;
     private UpdaterController mUpdaterController;
+    private UpdateEngine mUpdateEngine;
+    private UpdateEngineCallback mUpdateEngineCallback;
 
     private class PageHandler extends AsyncTask<Void, Void, String> {
         @Override
@@ -153,9 +157,20 @@ public class UpdatesActivity extends AppCompatActivity {
 
         pageIdActive = pageId;
         if (!Objects.equals(pageIdActive, "error")) {
-            Log.d(TAG, "Saving pageId " + pageIdActive);
+            //Log.d(TAG, "Saving pageId " + pageIdActive);
             prefsEditor.putString("pageId", pageIdActive).apply();
         }
+    }
+    public void renderPageProgress(String pageId, int progress, String progressStep) {
+        Page page = getPage(pageId);
+
+        page.progPercent = progress;
+        page.progStep = progressStep;
+
+        prefsEditor.putInt("progPercent", page.progPercent);
+        prefsEditor.putString("progStep", page.progStep);
+
+        renderPage(pageId);
     }
     public void renderPageCustom(String pageId, Page page) {
         registerPage(pageId, page);
@@ -235,10 +250,51 @@ public class UpdatesActivity extends AppCompatActivity {
         htmlChangelog = prefs.getString("changelog", "");
         //Log.d(TAG, "Loading changelog: " + htmlChangelog);
 
+        //Import and fill in the pages for the first time
+        registerPages();
+
+        mUpdateEngineCallback = new UpdateEngineCallback() {
+            @Override
+            public void onPayloadApplicationComplete(int errorCode) {
+                if (errorCode != UpdateEngine.ErrorCodeConstants.SUCCESS) {
+                    Log.d(TAG, "UpdateEngine: ERROR");
+                    renderPage("updateInstallFailed");
+                } else {
+                    Log.d(TAG, "UpdateEngine: SUCCESS");
+                    renderPage("updateInstalled");
+                }
+            }
+
+            @Override
+            public void onStatusUpdate(int status, float percent) {
+                switch (status) {
+                    case UpdateEngine.UpdateStatusConstants.VERIFYING:
+                        Log.d(TAG, "UpdateEngine: VERIFYING");
+                        renderPage("updateVerifying");
+                        break;
+                    case UpdateEngine.UpdateStatusConstants.DOWNLOADING:
+                        Log.d(TAG, "UpdateEngine: DOWNLOADING");
+                        renderPageProgress("updateInstalling", Math.round(percent * 100), getString(R.string.system_update_installing_title_text));
+                        break;
+                    case UpdateEngine.UpdateStatusConstants.FINALIZING:
+                        Log.d(TAG, "UpdateEngine: FINALIZING");
+                        renderPageProgress("updateInstalling", Math.round(percent * 100), getString(R.string.system_update_optimizing_apps));
+                        break;
+                    case UpdateEngine.UpdateStatusConstants.UPDATED_NEED_REBOOT:
+                        Log.d(TAG, "UpdateEngine: UPDATED_NEED_REBOOT");
+                        prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
+                        renderPage("updateInstalled");
+                        break;
+                }
+            }
+        };
+        mUpdateEngine = new UpdateEngine();
+        mUpdateEngine.bind(mUpdateEngineCallback);
+
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "Received intent: " + intent.getAction());
+                //Log.d(TAG, "Received intent: " + intent.getAction());
 
                 String downloadId = intent.getStringExtra(UpdaterController.EXTRA_DOWNLOAD_ID);
                 if (Objects.equals(downloadId, "")) {
@@ -272,39 +328,32 @@ public class UpdatesActivity extends AppCompatActivity {
                             break;
                     }
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
-                    Page page = getPage("updateDownloading");
-
-                    page.progPercent = update.getProgress();
-                    String percentage = NumberFormat.getPercentInstance().format(page.progPercent / 100.f);
+                    String percentage = NumberFormat.getPercentInstance().format(update.getProgress() / 100.f);
                     String speed = Formatter.formatFileSize(activity, update.getSpeed());
 
-                    page.progStep = percentage + " • ";
+                    String progStep = percentage + " • ";
                     if (update.getEta() > 0) {
                         CharSequence etaString = StringGenerator.formatETA(activity, update.getEta() * 1000);
-                        page.progStep += etaString;
+                        progStep += etaString;
                     } else {
-                        page.progStep += getString(R.string.system_update_download_eta_calculating);
+                        progStep += getString(R.string.system_update_download_eta_calculating);
                     }
-                    page.progStep += " • " + speed + "/s";
+                    progStep += " • " + speed + "/s";
 
                     if (Objects.equals(pageIdActive, "updateDownloading"))
-                        renderPage("updateDownloading");
+                        renderPageProgress("updateDownloading", update.getProgress(), progStep);
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
-                    Page page = getPage("updateInstalling");
-
-                    page.progPercent = update.getInstallProgress();
+                    String progStep = getString(R.string.system_update_prepare_install);
                     if (mUpdaterController.isInstallingABUpdate()) {
                         if (update.getFinalizing()) {
-                            page.progStep = getString(R.string.system_update_optimizing_apps);
+                            progStep = getString(R.string.system_update_optimizing_apps);
                         } else {
-                            page.progStep = getString(R.string.system_update_installing_title_text);
+                            progStep = getString(R.string.system_update_installing_title_text);
                         }
-                    } else {
-                        page.progStep = getString(R.string.system_update_prepare_install);
                     }
 
                     if (Objects.equals(pageIdActive, "updateInstalling"))
-                        renderPage("updateInstalling");
+                        renderPageProgress("updateInstalling", update.getInstallProgress(), progStep);
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
                     renderPage("checkForUpdates");
                 } else {
@@ -314,9 +363,6 @@ public class UpdatesActivity extends AppCompatActivity {
                 }
             }
         };
-
-        //Import and fill in the pages for the first time
-        registerPages();
 
         //Load the initial page
         new PageHandler().execute();
@@ -408,6 +454,8 @@ public class UpdatesActivity extends AppCompatActivity {
         page.btnExtraClickListener = v -> {
             downloadCancel();
         };
+        page.progPercent = prefs.getInt("progPercent", 0);
+        page.progStep = prefs.getString("progStep", "");
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -449,6 +497,8 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
         page.strStatus = getString(R.string.system_update_installing_title_text);
+        page.progPercent = prefs.getInt("progPercent", 0);
+        page.progStep = prefs.getString("progStep", "");
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -458,6 +508,8 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_install;
         page.strStatus = getString(R.string.system_update_installing_title_text);
+        page.progPercent = prefs.getInt("progPercent", 0);
+        page.progStep = prefs.getString("progStep", "");
         page.htmlContent = htmlChangelog;
         page.htmlColor = htmlColor;
         return page;
@@ -559,9 +611,8 @@ public class UpdatesActivity extends AppCompatActivity {
             if (!Objects.equals(updateId, "") && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
                 //fake the changelog for now
                 htmlChangelog = LoadAssetData("changelog.html");
-                htmlChangelog += "<br /><br /><p>" + getString(R.string.system_update_download_notice) + "<br />";
-                htmlChangelog += "<br />Released: " + StringGenerator.getDateLocalizedUTC(activity, DateFormat.LONG, update.getTimestamp());
-                htmlChangelog += "<br />Update size: " + Formatter.formatShortFileSize(activity, update.getFileSize()) + "</p>";
+                htmlChangelog += "<br /><br />";
+                htmlChangelog += "Update size: " + Formatter.formatShortFileSize(activity, update.getFileSize());
 
                 Log.d(TAG, "Saving changelog");
                 prefsEditor.putString("changelog", htmlChangelog).apply();
@@ -668,11 +719,15 @@ public class UpdatesActivity extends AppCompatActivity {
             mUpdaterController = mUpdaterService.getUpdaterController();
 
             if (update != null) {
-                mUpdaterController.addUpdate(update);
+                Log.d(TAG, "Found update: " + update.getDownloadId());
+                if (mUpdaterController.getUpdate(update.getDownloadId()) == null) {
+                    Log.d(TAG, "Adding missing update: " + update.getDownloadId());
+                    mUpdaterController.addUpdate(update);
 
-                List<String> updatesOnline = new ArrayList<>();
-                updatesOnline.add(update.getDownloadId());
-                mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+                    List<String> updatesOnline = new ArrayList<>();
+                    updatesOnline.add(update.getDownloadId());
+                    mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+                }
             }
 
             if (pageIdActive.equals("updateChecking")) {

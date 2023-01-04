@@ -108,7 +108,6 @@
     <string name="system_update_almost_done">System update almost done</string>
     <string name="system_update_check_now_button_text">Check for update</string>
     <string name="system_update_countdown_cancel_button">Cancel install</string>
-    <string name="system_update_download_notice">Downloading updates over a mobile network or while roaming may cause additional charges.</string>
     <string name="system_update_download_eta_calculating">Calculating...</string>
     <string name="system_update_download_error_notification_title">"Couldn't download system update"</string>
     <string name="system_update_download_pause_button">Pause</string>

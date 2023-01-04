@@ -100,12 +100,13 @@ public class Page {
                                 mContext.btnSecondary.setVisibility(View.INVISIBLE);
                         }
 
-                        mContext.progressText.setText(progStep);
                         if (!Objects.equals(progStep, "")) {
                             mContext.progressText.setText(progStep);
-                            mContext.progressBar.setProgress(progPercent, true);
-
                             mContext.progressText.setVisibility(View.VISIBLE);
+                        }
+
+                        if (progPercent > 0) {
+                            mContext.progressBar.setProgress(progPercent, true);
                             mContext.progressBar.setVisibility(View.VISIBLE);
                         }
 
