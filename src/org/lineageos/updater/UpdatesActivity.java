@@ -147,16 +147,16 @@ public class UpdatesActivity extends AppCompatActivity {
             page.htmlContent = "Unknown pageId: " + pageId;
         }
 
-        page.render(this);
-        if (!page.runnableRan) {
-            page.runnableRan = true;
-            page.runnable.run();
-        }
-
         pageIdActive = pageId;
         if (!Objects.equals(pageIdActive, "error")) {
             //Log.d(TAG, "Saving pageId " + pageIdActive);
             prefsEditor.putString("pageId", pageIdActive).apply();
+        }
+
+        page.render(this);
+        if (!page.runnableRan) {
+            page.runnableRan = true;
+            page.runnable.run();
         }
     }
     public void renderPageProgress(String pageId, int progress, String progressStep) {
@@ -522,7 +522,7 @@ public class UpdatesActivity extends AppCompatActivity {
             }
         };
         page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = getString(R.string.system_update_update_available_title_text);
+        page.strStatus = getString(R.string.system_update_notification_message_pending_reboot_finish_updating);
         page.btnPrimaryText = getString(R.string.system_update_restart_now);
         page.btnPrimaryClickListener = v -> {
             reboot();
