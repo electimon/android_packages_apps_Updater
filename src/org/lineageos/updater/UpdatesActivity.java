@@ -556,7 +556,7 @@ public class UpdatesActivity extends AppCompatActivity {
             return;
         }
 
-        Log.d(TAG, "Checking for updates");
+        Log.d(TAG, "Checking for updates!");
         updateCheck = true;
         if (!Objects.equals(pageIdActive, "updateChecking"))
             renderPage("updateChecking");
@@ -634,6 +634,8 @@ public class UpdatesActivity extends AppCompatActivity {
             Log.e(TAG, "Tried to call download when update is already under way");
             return;
         }
+
+        Log.d(TAG, "Starting download!");
         setUpdating(true);
 
         mUpdaterController.pauseDownload(updateId);
@@ -646,6 +648,7 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void downloadCancel() {
+        Log.d(TAG, "Cancelling download!");
         setUpdating(false);
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
@@ -653,6 +656,7 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void downloadPause() {
+        Log.d(TAG, "Pausing download!");
         setUpdating(true);
         mUpdaterController.pauseDownload(updateId);
         Page pagePaused = getPage("updatePaused");
@@ -663,30 +667,35 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void downloadResume() {
+        Log.d(TAG, "Resuming download!");
         setUpdating(true);
         renderPage("updateDownloading");
         mUpdaterController.resumeDownload(updateId);
     }
 
     private void install() {
+        Log.d(TAG, "Installing update!");
         setUpdating(true);
         renderPage("updateInstalling");
         Utils.triggerUpdate(this, updateId);
     }
 
     private void installPause() {
+        Log.d(TAG, "Pausing update installation!");
         setUpdating(false);
         renderPage("updateInstallingPaused");
         mUpdateEngine.suspend();
     }
 
     private void installResume() {
+        Log.d(TAG, "Resuming update installation!");
         setUpdating(true);
         renderPage("updateInstalling");
         mUpdateEngine.resume();
     }
 
     private void reboot() {
+        Log.d(TAG, "Rebooting device!");
         setUpdating(false);
         PowerManager pm = this.getSystemService(PowerManager.class);
         pm.reboot(null);
@@ -694,7 +703,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private void setUpdating(Boolean updating) {
         wasUpdating = updating;
-        Log.d(TAG, "Was updating: " + updating);
+        Log.d(TAG, "True or false, we are now updating: " + updating);
         prefsEditor.putBoolean("updating", updating).apply();
     }
 
