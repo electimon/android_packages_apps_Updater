@@ -114,13 +114,6 @@ public class UpdaterService extends Service {
                     extras.putString(UpdaterController.EXTRA_DOWNLOAD_ID, downloadId);
                     mNotificationBuilder.setExtras(extras);
                     handleUpdateStatusChange(update);
-                } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
-                    UpdateInfo update = mUpdaterController.getUpdate(downloadId);
-                    handleDownloadProgressChange(update);
-                } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
-                    UpdateInfo update = mUpdaterController.getUpdate(downloadId);
-                    setNotificationTitle(update);
-                    handleInstallProgress(update);
                 } else if (UpdaterController.ACTION_UPDATE_REMOVED.equals(intent.getAction())) {
                     Bundle extras = mNotificationBuilder.getExtras();
                     if (downloadId.equals(extras.getString(UpdaterController.EXTRA_DOWNLOAD_ID))) {
@@ -134,8 +127,6 @@ public class UpdaterService extends Service {
             }
         };
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(UpdaterController.ACTION_DOWNLOAD_PROGRESS);
-        intentFilter.addAction(UpdaterController.ACTION_INSTALL_PROGRESS);
         intentFilter.addAction(UpdaterController.ACTION_UPDATE_STATUS);
         intentFilter.addAction(UpdaterController.ACTION_UPDATE_REMOVED);
         LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, intentFilter);
@@ -253,42 +244,6 @@ public class UpdaterService extends Service {
 
     private void handleUpdateStatusChange(UpdateInfo update) {
         switch (update.getStatus()) {
-            case DELETED: {
-                stopForeground(STOP_FOREGROUND_DETACH);
-                mNotificationBuilder.setOngoing(false);
-                mNotificationManager.cancel(NOTIFICATION_ID);
-                tryStopSelf();
-                break;
-            }
-            case STARTING: {
-                mNotificationBuilder.mActions.clear();
-                mNotificationBuilder.setProgress(0, 0, true);
-                mNotificationStyle.setSummaryText(null);
-                String text = getString(R.string.download_starting_notification);
-                mNotificationStyle.bigText(text);
-                mNotificationBuilder.setStyle(mNotificationStyle);
-                mNotificationBuilder.setSmallIcon(android.R.drawable.stat_sys_download);
-                mNotificationBuilder.setTicker(text);
-                mNotificationBuilder.setOngoing(true);
-                mNotificationBuilder.setAutoCancel(false);
-                startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                break;
-            }
-            case DOWNLOADING: {
-                String text = getString(R.string.downloading_notification);
-                mNotificationStyle.bigText(text);
-                mNotificationBuilder.setStyle(mNotificationStyle);
-                mNotificationBuilder.setSmallIcon(android.R.drawable.stat_sys_download);
-                mNotificationBuilder.addAction(android.R.drawable.ic_media_pause,
-                        getString(R.string.pause_button),
-                        getPausePendingIntent(update.getDownloadId()));
-                mNotificationBuilder.setTicker(text);
-                mNotificationBuilder.setOngoing(true);
-                mNotificationBuilder.setAutoCancel(false);
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                break;
-            }
             case PAUSED: {
                 stopForeground(STOP_FOREGROUND_DETACH);
                 // In case we pause before the first progress update
@@ -308,88 +263,6 @@ public class UpdaterService extends Service {
                 tryStopSelf();
                 break;
             }
-            case PAUSED_ERROR: {
-                stopForeground(STOP_FOREGROUND_DETACH);
-                int progress = update.getProgress();
-                // In case we pause before the first progress update
-                mNotificationBuilder.setProgress(progress > 0 ? 100 : 0, progress, false);
-                mNotificationBuilder.mActions.clear();
-                String text = getString(R.string.download_paused_error_notification);
-                mNotificationStyle.bigText(text);
-                mNotificationBuilder.setStyle(mNotificationStyle);
-                mNotificationBuilder.setSmallIcon(android.R.drawable.stat_sys_warning);
-                mNotificationBuilder.addAction(android.R.drawable.ic_media_play,
-                        getString(R.string.resume_button),
-                        getResumePendingIntent(update.getDownloadId()));
-                mNotificationBuilder.setTicker(text);
-                mNotificationBuilder.setOngoing(false);
-                mNotificationBuilder.setAutoCancel(false);
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                tryStopSelf();
-                break;
-            }
-            case VERIFYING: {
-                mNotificationBuilder.setProgress(0, 0, true);
-                mNotificationStyle.setSummaryText(null);
-                mNotificationBuilder.setStyle(mNotificationStyle);
-                mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
-                mNotificationBuilder.mActions.clear();
-                String text = getString(R.string.verifying_download_notification);
-                mNotificationStyle.bigText(text);
-                mNotificationBuilder.setTicker(text);
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                break;
-            }
-            case VERIFIED: {
-                stopForeground(STOP_FOREGROUND_DETACH);
-                mNotificationBuilder.setStyle(null);
-                mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
-                mNotificationBuilder.setProgress(0, 0, false);
-                String text = getString(R.string.download_completed_notification);
-                mNotificationBuilder.setContentText(text);
-                mNotificationBuilder.setTicker(text);
-                mNotificationBuilder.setOngoing(false);
-                mNotificationBuilder.setAutoCancel(true);
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                tryStopSelf();
-                break;
-            }
-            case VERIFICATION_FAILED: {
-                stopForeground(STOP_FOREGROUND_DETACH);
-                mNotificationBuilder.setStyle(null);
-                mNotificationBuilder.setSmallIcon(android.R.drawable.stat_sys_warning);
-                mNotificationBuilder.setProgress(0, 0, false);
-                String text = getString(R.string.verification_failed_notification);
-                mNotificationBuilder.setContentText(text);
-                mNotificationBuilder.setTicker(text);
-                mNotificationBuilder.setOngoing(false);
-                mNotificationBuilder.setAutoCancel(true);
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                tryStopSelf();
-                break;
-            }
-            case INSTALLING: {
-                mNotificationBuilder.mActions.clear();
-                mNotificationBuilder.setStyle(mNotificationStyle);
-                mNotificationBuilder.setSmallIcon(R.drawable.ic_system_update);
-                mNotificationBuilder.setProgress(0, 0, false);
-                mNotificationStyle.setSummaryText(null);
-                String text = UpdateInstaller.isInstalling() ?
-                        getString(R.string.dialog_prepare_zip_message) :
-                        getString(R.string.installing_update);
-                mNotificationStyle.bigText(text);
-                if (ABUpdateInstaller.isInstallingUpdate(this)) {
-                    mNotificationBuilder.addAction(android.R.drawable.ic_media_pause,
-                            getString(R.string.suspend_button),
-                            getSuspendInstallationPendingIntent());
-                }
-                mNotificationBuilder.setTicker(text);
-                mNotificationBuilder.setOngoing(true);
-                mNotificationBuilder.setAutoCancel(false);
-                startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
-                mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-                break;
-            }
             case INSTALLED: {
                 stopForeground(STOP_FOREGROUND_DETACH);
                 mNotificationBuilder.mActions.clear();
@@ -405,12 +278,6 @@ public class UpdaterService extends Service {
                 mNotificationBuilder.setOngoing(false);
                 mNotificationBuilder.setAutoCancel(true);
                 mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-
-                SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-                boolean deleteUpdate = pref.getBoolean(Constants.PREF_AUTO_DELETE_UPDATES, false);
-                if (deleteUpdate) {
-                    mUpdaterController.deleteUpdate(update.getDownloadId());
-                }
 
                 tryStopSelf();
                 break;
@@ -456,37 +323,6 @@ public class UpdaterService extends Service {
         }
     }
 
-    private void handleDownloadProgressChange(UpdateInfo update) {
-        int progress = update.getProgress();
-        mNotificationBuilder.setProgress(100, progress, false);
-
-        String percent = NumberFormat.getPercentInstance().format(progress / 100.f);
-        mNotificationStyle.setSummaryText(percent);
-
-        setNotificationTitle(update);
-
-        String speed = Formatter.formatFileSize(this, update.getSpeed());
-        CharSequence eta = StringGenerator.formatETA(this, update.getEta() * 1000);
-        mNotificationStyle.bigText(
-                getString(R.string.text_download_speed, eta, speed));
-
-        mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-    }
-
-    private void handleInstallProgress(UpdateInfo update) {
-        setNotificationTitle(update);
-        int progress = update.getInstallProgress();
-        mNotificationBuilder.setProgress(100, progress, false);
-        String percent = NumberFormat.getPercentInstance().format(progress / 100.f);
-        mNotificationStyle.setSummaryText(percent);
-        boolean notAB = UpdateInstaller.isInstalling();
-        mNotificationStyle.bigText(notAB ? getString(R.string.dialog_prepare_zip_message) :
-                update.getFinalizing() ?
-                        getString(R.string.finalizing_package) :
-                        getString(R.string.preparing_ota_first_boot));
-        mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
-    }
-
     private void setNotificationTitle(UpdateInfo update) {
         String buildDate = StringGenerator.getDateLocalizedUTC(this,
                 DateFormat.MEDIUM, update.getTimestamp());
@@ -505,26 +341,10 @@ public class UpdaterService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private PendingIntent getPausePendingIntent(String downloadId) {
-        final Intent intent = new Intent(this, UpdaterService.class);
-        intent.setAction(ACTION_DOWNLOAD_CONTROL);
-        intent.putExtra(EXTRA_DOWNLOAD_ID, downloadId);
-        intent.putExtra(EXTRA_DOWNLOAD_CONTROL, DOWNLOAD_PAUSE);
-        return PendingIntent.getService(this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    }
-
     private PendingIntent getRebootPendingIntent() {
         final Intent intent = new Intent(this, UpdaterReceiver.class);
         intent.setAction(UpdaterReceiver.ACTION_INSTALL_REBOOT);
         return PendingIntent.getBroadcast(this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    }
-
-    private PendingIntent getSuspendInstallationPendingIntent() {
-        final Intent intent = new Intent(this, UpdaterService.class);
-        intent.setAction(ACTION_INSTALL_SUSPEND);
-        return PendingIntent.getService(this, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
