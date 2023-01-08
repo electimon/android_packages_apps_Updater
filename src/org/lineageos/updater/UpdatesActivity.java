@@ -119,8 +119,7 @@ public class UpdatesActivity extends AppCompatActivity {
                         return "updateInstalled";
                     }
                 } else if (wasUpdating) {
-                    setUpdating(false);
-                    return "updateRetryDownload";
+                    return ""; //We still have the update object and we're still updating, let the logic take care of what's next
                 }
             }
 
@@ -133,7 +132,8 @@ public class UpdatesActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-            renderPage(result);
+            if (!Objects.equals(result, ""))
+                renderPage(result);
         }
     }
 
@@ -187,7 +187,7 @@ public class UpdatesActivity extends AppCompatActivity {
         renderPage(pageId);
     }
     private void registerPage(String pageId, Page page) {
-        Log.d(TAG, "Register page: " + pageId);
+        //Log.d(TAG, "Register page: " + pageId);
         pages.put(pageId, page);
     }
     //A helpful wrapper that refreshes all of our pages for major content updates
@@ -340,6 +340,7 @@ public class UpdatesActivity extends AppCompatActivity {
                             break;
                     }
                 } else if (UpdaterController.ACTION_DOWNLOAD_PROGRESS.equals(intent.getAction())) {
+                    registerPage("updateDownloading", pageUpdateDownloading());
                     String percentage = NumberFormat.getPercentInstance().format(update.getProgress() / 100.f);
                     String speed = Formatter.formatFileSize(activity, update.getSpeed());
 
@@ -355,6 +356,7 @@ public class UpdatesActivity extends AppCompatActivity {
                     if (Objects.equals(pageIdActive, "updateDownloading"))
                         renderPageProgress("updateDownloading", update.getProgress(), progStep);
                 } else if (UpdaterController.ACTION_INSTALL_PROGRESS.equals(intent.getAction())) {
+                    registerPage("updateInstalling", pageUpdateInstalling());
                     String progStep = getString(R.string.system_update_prepare_install);
                     if (mUpdaterController.isInstallingABUpdate()) {
                         if (update.getFinalizing()) {
@@ -585,6 +587,7 @@ public class UpdatesActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "Checking for updates!");
+        setUpdating(false);
         updateCheck = true;
         if (!Objects.equals(pageIdActive, "updateChecking"))
             renderPage("updateChecking");
@@ -667,6 +670,9 @@ public class UpdatesActivity extends AppCompatActivity {
                 Log.d(TAG, "Saving changelog");
                 prefsEditor.putString("changelog", htmlChangelog).apply();
                 prefsEditor.commit();
+
+                setUpdating(true);
+
                 registerPages(); //Reload everything that might display the changelog
 
                 renderPage("updateAvailable");
@@ -694,7 +700,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private void downloadCancel() {
         Log.d(TAG, "Cancelling download!");
-        setUpdating(false);
+        setUpdating(true);
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
         renderPage("updateAvailable");

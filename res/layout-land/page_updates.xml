@@ -9,133 +9,136 @@
 
 
     <ImageView
-        android:id="@+id/header_status_icon"
+        android:id="@+id/header_icon"
         android:layout_width="46dp"
         android:layout_height="46dp"
         android:layout_marginStart="40dp"
         android:layout_marginTop="30dp"
-        app:layout_constraintRight_toLeftOf="@id/header_rom"
+        android:visibility="visible"
+        app:layout_constraintRight_toLeftOf="@id/header_title"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_system_update"
         app:tint="@color/theme_accent2" />
 
-    <ImageButton
-        android:id="@+id/refreshbtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="10dp"
-        android:background="@drawable/ic_circle"
-        android:contentDescription="@string/menu_refresh"
-        android:src="@drawable/ic_menu_refresh"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <TextView
-        android:id="@+id/header_last_check"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:fontFamily="@font/harmonyos_sans_regular"
-        android:text="@string/header_last_updates_check_never"
-        android:textSize="14sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
-        android:id="@+id/header_rom"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:fontFamily="@font/harmonyos_sans_regular"
+        android:id="@+id/header_title"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="40dp"
         android:text="@string/header_title_text"
-        android:textColor="@color/theme_accent3"
+        android:textColor="@color/theme_accent2"
         android:textSize="36sp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/header_status"
-        app:layout_constraintLeft_toRightOf="@id/header_status_icon"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@id/header_icon"
+        app:layout_constraintEnd_toEndOf="@id/header_status"
+        app:layout_constraintStart_toEndOf="@id/header_icon"
+        app:layout_constraintTop_toTopOf="@id/header_icon" />
 
     <TextView
         android:id="@+id/header_status"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="35dp"
-        android:layout_marginEnd="60dp"
-        android:fontFamily="@font/harmonyos_sans_regular"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="24dip"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp"
+        android:fontStyle="normal"
+        android:fontWeight="400"
+        android:letterSpacing="-0.02"
         android:text="@string/list_no_updates"
         android:textColor="?android:attr/textColorPrimary"
-        android:textSize="37sp"
-        app:layout_constraintEnd_toStartOf="@id/barrier"
+        android:textSize="40sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/progress_bar"
+        app:layout_constraintEnd_toStartOf="@id/webview"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/header_rom" />
+        app:layout_constraintTop_toBottomOf="@id/header_icon" />
 
-    <TextView
-        android:id="@+id/header_build_version"
+    <Button
+        android:id="@+id/btn_primary"
+        style="@style/Widget.Material3.Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:fontFamily="@font/harmonyos_sans_regular"
-        android:text="@string/list_build_version"
-        android:textColor="@color/theme_accent3"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.6"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/header_status_icon" />
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="20dp"
+        android:backgroundTint="@color/theme_accent2"
+        android:text="Button"
+        android:textSize="16dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <TextView
-        android:id="@+id/header_build_security_patch"
+    <Button
+        android:id="@+id/btn_secondary"
+        style="@style/Widget.Material3.Button.TextButton.Icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:fontFamily="@font/harmonyos_sans_regular"
-        android:gravity="start"
-        android:text="@string/header_build_security_patch"
-        android:textColor="@color/theme_accent3"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@+id/header_build_date"
-        app:layout_constraintStart_toStartOf="@id/header_build_version"
-        app:layout_constraintTop_toBottomOf="@+id/header_build_version" />
+        android:layout_marginBottom="20dp"
+        android:text="Button"
+        android:textColor="@color/theme_accent2"
+        android:textSize="16dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_primary"
+        app:layout_constraintStart_toEndOf="@id/btn_extra" />
 
-    <TextView
-        android:id="@+id/header_build_date"
+    <Button
+        android:id="@+id/btn_extra"
+        style="@style/Widget.Material3.Button.TextButton.Icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:fontFamily="@font/harmonyos_sans_regular"
-        android:gravity="start"
-        android:text="@string/header_build_date"
-        android:textColor="@color/theme_accent3"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@id/header_build_version"
-        app:layout_constraintTop_toBottomOf="@+id/header_build_security_patch" />
+        android:layout_marginStart="40dp"
+        android:layout_marginBottom="20dp"
+        android:text="Button"
+        android:textColor="@color/theme_accent2"
+        android:textSize="16dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_view"
+    <WebView
+        android:id="@+id/webview"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="20dp"
         android:layout_marginEnd="30dp"
-        android:layout_marginBottom="10dp"
-        android:clipToPadding="false"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="20dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/btn_primary"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintStart_toEndOf="@id/header_status"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_constraintStart_toEndOf="@id/header_status" />
 
-    </androidx.recyclerview.widget.RecyclerView>
-
-    <androidx.constraintlayout.widget.Barrier
-        android:id="@+id/barrier"
-        android:layout_width="wrap_content"
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:barrierDirection="start"
-        app:constraint_referenced_ids="header_build_version"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_weight="1"
+        android:paddingTop="4dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toStartOf="@id/webview"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header_status"
+        tools:progress="65" />
+
+    <TextView
+        android:id="@+id/progress_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="20dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toStartOf="@id/webview"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/progress_bar" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

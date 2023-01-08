@@ -33,7 +33,7 @@ public class Page {
     public Runnable runnable = new Runnable() {
         @Override
         public void run() {
-            Log.d(mContext.TAG, "This page does not run custom code!");
+            //We don't do anything right now!
         }
     };
     public Boolean runnableRan = false;
