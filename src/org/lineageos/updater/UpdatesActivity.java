@@ -167,12 +167,21 @@ public class UpdatesActivity extends AppCompatActivity {
         page.render(this);
         if (!page.runnableRan) {
             page.runnableRan = true;
-            page.runnable.run();
+            Thread thread = new Thread(page.runnable);
+            thread.start();
         }
     }
     public void renderPageProgress(String pageId, int progress, String progressStep) {
+        if (!Objects.equals(pageId, pageIdActive))
+            return;
         Page page = getPage(pageId);
 
+        if (progress < 0) {
+            progress = 1;
+            progressBar.setIndeterminate(true);
+        } else {
+            progressBar.setIndeterminate(false);
+        }
         page.progPercent = progress;
         page.progStep = progressStep;
 
@@ -432,7 +441,12 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
         page.strStatus = getString(R.string.system_update_update_checking);
-        page.htmlContent = LoadAssetData("loading.html");
+        page.runnable = new Runnable() {
+            @Override
+            public void run() {
+                renderPageProgress("updateChecking", -1, getString(R.string.system_update_update_checking));
+            }
+        };
         return page;
     }
 
@@ -844,26 +858,5 @@ public class UpdatesActivity extends AppCompatActivity {
             easterEggSteps = 0;
             renderPage("enrollEarlyUpdates");
         }
-    }
-
-    public String LoadAssetData(String inFile) {
-        String contents = "";
-
-        try {
-            Context context = this.getApplicationContext();
-            InputStream file = context.getAssets().open(inFile);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(file));
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                if (contents != "")
-                    contents += "\n";
-                contents += line;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return contents;
     }
 }

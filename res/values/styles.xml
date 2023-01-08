@@ -18,4 +18,10 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <style name="infinite_progress_horizontal" parent="Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:indeterminate">true</item>
+    </style>
 </resources>
