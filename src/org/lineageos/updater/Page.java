@@ -130,7 +130,6 @@ public class Page {
                                     "padding:0px; " +
                                     "margin:0px; " +
                                     "letter-spacing: -0.02; " +
-                                    "font-size: 17px; " +
                                     "line-height: 1.5; }" +
                                     "</style></head><body>" + htmlContent + "</body></html>";
                             if (!html.equals(mContext.htmlContentLast)) {
