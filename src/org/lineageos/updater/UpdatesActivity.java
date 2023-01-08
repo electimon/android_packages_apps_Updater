@@ -439,14 +439,14 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private Page pageUpdateChecking() {
         Page page = new Page();
-        page.icon = R.drawable.ic_google_system_update;
-        page.strStatus = getString(R.string.system_update_update_checking);
         page.runnable = new Runnable() {
             @Override
             public void run() {
                 renderPageProgress("updateChecking", -1, "");
             }
         };
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = getString(R.string.system_update_update_checking);
         return page;
     }
 
@@ -618,10 +618,6 @@ public class UpdatesActivity extends AppCompatActivity {
             renderPage("checkForUpdates");
             return;
         }
-        if (update != null && update.getStatus() != UpdateStatus.UNKNOWN) {
-            Log.d(TAG, "Skipping update check during update operation");
-            return;
-        }
 
         Log.d(TAG, "Checking for updates!");
         setUpdating(false);
@@ -767,7 +763,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private void installPause() {
         Log.d(TAG, "Pausing update installation!");
-        setUpdating(false);
+        setUpdating(true);
         renderPage("updateInstallingPaused");
         mUpdateEngine.suspend();
     }
