@@ -43,6 +43,7 @@ import org.lineageos.updater.model.UpdateStatus;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -470,19 +471,25 @@ public class UpdatesActivity extends AppCompatActivity {
         page.htmlColor = htmlColor;
 
         Page pageDownload = getPage("updateDownloading");
-        page.progStep = pageDownload.progStep;
+        String percentage = NumberFormat.getPercentInstance().format(pageDownload.progPercent / 100.f);
+        page.progStep = percentage + " • " + getString(R.string.system_update_download_paused_title_text);
         page.progPercent = pageDownload.progPercent;
 
         return page;
     }
 
     private Page pageUpdateRetryDownload() {
-        Page page = pageUpdateDownloading();
+        Page page = getPage("updateDownloading");
         page.strStatus = getString(R.string.system_update_download_error_notification_title);
         page.btnPrimaryText = getString(R.string.system_update_download_retry_button_text);
         page.btnPrimaryClickListener = v -> {
             downloadResume();
         };
+
+        String percentage = NumberFormat.getPercentInstance().format(page.progPercent / 100.f);
+        page.progStep = percentage + " • " + getString(R.string.system_update_download_retry_button_text);
+        page.progPercent = page.progPercent;
+
         return page;
     }
 
@@ -588,6 +595,10 @@ public class UpdatesActivity extends AppCompatActivity {
                 }
 
                 try {
+                    File oldFile = update.getFile();
+                    if (oldFile != null)
+                        oldFile.delete();
+
                     update = Utils.parseJsonUpdate(obj);
                     updateId = update.getDownloadId();
                     mUpdaterController.addUpdate(update);
@@ -639,14 +650,14 @@ public class UpdatesActivity extends AppCompatActivity {
             return;
         }
 
+        //Reset the page entirely
+        registerPage("updateDownloading", pageUpdateDownloading());
+        renderPage("updateDownloading");
+
         Log.d(TAG, "Starting download!");
         setUpdating(true);
 
         mUpdaterController.startDownload(updateId);
-
-        Page page = getPage("updateDownloading");
-        page.progPercent = 0;
-        renderPage("updateDownloading");
     }
 
     private void downloadCancel() {
@@ -660,17 +671,14 @@ public class UpdatesActivity extends AppCompatActivity {
     private void downloadPause() {
         Log.d(TAG, "Pausing download!");
         setUpdating(true);
-        mUpdaterController.pauseDownload(updateId);
-        Page pagePaused = getPage("updatePaused");
-        Page pageDownload = getPage("updateDownloading");
-        pagePaused.progPercent = pageDownload.progPercent;
-        pagePaused.progStep = pageDownload.progStep;
         renderPage("updatePaused");
+        mUpdaterController.pauseDownload(updateId);
     }
 
     private void downloadResume() {
         Log.d(TAG, "Resuming download!");
         setUpdating(true);
+        registerPage("updateDownloading", pageUpdateDownloading());
         renderPage("updateDownloading");
         mUpdaterController.resumeDownload(updateId);
     }
@@ -747,14 +755,12 @@ public class UpdatesActivity extends AppCompatActivity {
 
             if (update != null) {
                 Log.d(TAG, "Found update: " + update.getDownloadId());
-                if (mUpdaterController.getUpdate(update.getDownloadId()) == null) {
                     Log.d(TAG, "Adding missing update: " + update.getDownloadId());
                     mUpdaterController.addUpdate(update);
 
                     List<String> updatesOnline = new ArrayList<>();
                     updatesOnline.add(update.getDownloadId());
                     mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
-                }
             }
 
             if (pageIdActive.equals("updateChecking")) {
