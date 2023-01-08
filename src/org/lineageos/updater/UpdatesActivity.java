@@ -204,6 +204,7 @@ public class UpdatesActivity extends AppCompatActivity {
         registerPage("updateInstallingPaused", pageUpdateInstallingPaused());
         registerPage("updateInstalled", pageUpdateInstalled());
         registerPage("updateInstallFailed", pageUpdateInstallFailed());
+        registerPage("enrollEarlyUpdates", pageEarlyUpdates());
     }
 
     @Override
@@ -576,6 +577,27 @@ public class UpdatesActivity extends AppCompatActivity {
         return page;
     }
 
+    private Page pageEarlyUpdates() {
+        Page page = new Page();
+        page.icon = R.drawable.ic_google_system_update;
+        page.strStatus = getString(R.string.system_update_enroll_early_release);
+        page.btnPrimaryText = getString(R.string.system_update_enroll_early_release_accept_button);
+        page.btnPrimaryClickListener = v -> {
+            prefsEditor.putInt("earlyUpdates", 1).apply();
+            prefsEditor.commit();
+            renderPage("checkForUpdates");
+        };
+        page.btnExtraText = getString(R.string.system_update_enroll_early_release_reject_button);
+        page.btnExtraClickListener = v -> {
+            prefsEditor.putInt("earlyUpdates", 0).apply();
+            prefsEditor.commit();
+            renderPage("checkForUpdates");
+        };
+        page.htmlContent = getString(R.string.system_update_enroll_early_release_terms);
+        page.htmlColor = htmlColor;
+        return page;
+    }
+
     private void refresh() {
         if (mUpdaterController == null) {
             Log.e(TAG, "mUpdaterController is null during update check");
@@ -813,21 +835,15 @@ public class UpdatesActivity extends AppCompatActivity {
         }
     };
 
+    private int easterEggSteps = 0;
+
     private void easterEgg() {
-        int steps = prefs.getInt("easterEgg", 0);
-        steps++;
+        easterEggSteps++;
 
-        if (steps == 7) {
-            progressText.setText("Enabled sending ID for beta updates!");
-            progressText.setVisibility(View.VISIBLE);
-        } else if (steps >= 8) {
-            steps = 0;
-            progressText.setText("Disabled sending ID, no more beta updates!");
-            progressText.setVisibility(View.VISIBLE);
+        if (easterEggSteps == 7) {
+            easterEggSteps = 0;
+            renderPage("enrollEarlyUpdates");
         }
-
-        prefsEditor.putInt("easterEgg", steps).apply();
-        prefsEditor.commit();
     }
 
     public String LoadAssetData(String inFile) {

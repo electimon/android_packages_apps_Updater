@@ -162,7 +162,7 @@ public class Utils {
         @SuppressLint("HardwareIds") String id = android.provider.Settings.Secure.getString(
                 context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 
-        if (PreferenceManager.getDefaultSharedPreferences(context).getInt("easterEgg", 0) != 7)
+        if (PreferenceManager.getDefaultSharedPreferences(context).getInt("earlyUpdates", 0) <= 0)
             id = "redacted";
 
         String changelogUrl = SystemProperties.get(Constants.PROP_UPDATER_URI_CHANGELOG);
@@ -186,7 +186,7 @@ public class Utils {
         @SuppressLint("HardwareIds") String id = android.provider.Settings.Secure.getString(
                 context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 
-        if (PreferenceManager.getDefaultSharedPreferences(context).getInt("easterEgg", 0) != 7)
+        if (PreferenceManager.getDefaultSharedPreferences(context).getInt("earlyUpdates", 0) <= 0)
             id = "redacted";
 
         String serverUrl = SystemProperties.get(Constants.PROP_UPDATER_URI);

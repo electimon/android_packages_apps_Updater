@@ -115,6 +115,10 @@
     <string name="system_update_download_paused_title_text">Download paused</string>
     <string name="system_update_download_resume_button">Resume</string>
     <string name="system_update_download_retry_button_text">Retry download</string>
+    <string name="system_update_enroll_early_release">Enrolling to early releases</string>
+    <string name="system_update_enroll_early_release_accept_button">Accept</string>
+    <string name="system_update_enroll_early_release_reject_button">Reject</string>
+    <string name="system_update_enroll_early_release_terms">By enrolling in early releases, you acknowledge that your information may be saved by the update server.\n\n(Currently required information: Device ID)</string>
     <string name="system_update_install_failed_title_text">"Couldn't update"</string>
     <string name="system_update_installing_title_text">Installing system update…</string>
     <string name="system_update_no_update_content_text">Your system is up to date</string>
