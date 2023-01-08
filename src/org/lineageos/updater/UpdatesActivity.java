@@ -674,6 +674,7 @@ public class UpdatesActivity extends AppCompatActivity {
     private void downloadPause() {
         Log.d(TAG, "Pausing download!");
         setUpdating(true);
+        registerPage("updatePaused", pageUpdatePaused());
         renderPage("updatePaused");
         mUpdaterController.pauseDownload(updateId);
     }
