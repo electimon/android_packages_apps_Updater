@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
+import android.util.Base64;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -33,10 +34,16 @@ import org.json.JSONException;
 import org.lineageos.updater.download.DownloadClient;
 import org.lineageos.updater.misc.Constants;
 import org.lineageos.updater.misc.Utils;
+import org.lineageos.updater.protos.Build;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 public class UpdatesCheckReceiver extends BroadcastReceiver {
@@ -73,52 +80,24 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
             return;
         }
 
-        final File json = Utils.getCachedUpdateList(context);
-        final File jsonNew = new File(json.getAbsolutePath() + UUID.randomUUID());
-        String url = Utils.getServerURL(context);
-        DownloadClient.DownloadCallback callback = new DownloadClient.DownloadCallback() {
-            @Override
-            public void onFailure(boolean cancelled) {
-                Log.e(TAG, "Could not download updates list, scheduling new check");
-                scheduleUpdatesCheck(context);
-            }
-
-            @Override
-            public void onResponse(DownloadClient.Headers headers) {
-            }
-
-            @Override
-            public void onSuccess() {
-                try {
-                    if (json.exists() && Utils.checkForNewUpdates(json, jsonNew)) {
-                        showNotification(context);
-                        updateRepeatingUpdatesCheck(context);
-                    }
-                    //noinspection ResultOfMethodCallIgnored
-                    jsonNew.renameTo(json);
-                    long currentMillis = System.currentTimeMillis();
-                    preferences.edit()
-                            .putLong(Constants.PREF_LAST_UPDATE_CHECK, currentMillis)
-                            .apply();
-                    // In case we set a one-shot check because of a previous failure
-                    cancelUpdatesCheck(context);
-                } catch (IOException | JSONException e) {
-                    Log.e(TAG, "Could not parse list, scheduling new check", e);
-                    scheduleUpdatesCheck(context);
-                }
-            }
-        };
-
         try {
-            DownloadClient downloadClient = new DownloadClient.Builder()
-                    .setUrl(url)
-                    .setDestination(jsonNew)
-                    .setDownloadCallback(callback)
-                    .build();
-            downloadClient.start();
-        } catch (IOException e) {
-            Log.e(TAG, "Could not fetch list, scheduling new check", e);
-            scheduleUpdatesCheck(context);
+            String urlOTA = Utils.getServerURL(context);
+            URL url = new URL(urlOTA);
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            byte[] buildBytes = in.readAllBytes();
+            Build build = org.lineageos.updater.protos.Build.parseFrom(buildBytes);
+            if (Objects.equals(build.getVersion(), "")) {
+                Log.d(TAG, "Failed to find version in updates proto");
+                return;
+            }
+
+            Log.d(TAG, "Saving update for " + build.getSha256());
+            preferences.edit().putString("update", Base64.encodeToString(buildBytes, Base64.DEFAULT)).apply();
+            preferences.edit().commit();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to perform scheduled update check", e);
         }
     }
 
@@ -154,18 +133,14 @@ public class UpdatesCheckReceiver extends BroadcastReceiver {
     }
 
     public static void scheduleRepeatingUpdatesCheck(Context context) {
-        if (!Utils.isUpdateCheckEnabled(context)) {
-            return;
-        }
-
         PendingIntent updateCheckIntent = getRepeatingUpdatesCheckIntent(context);
         AlarmManager alarmMgr = context.getSystemService(AlarmManager.class);
         alarmMgr.setRepeating(AlarmManager.RTC, System.currentTimeMillis() +
-                Utils.getUpdateCheckInterval(context), Utils.getUpdateCheckInterval(context),
+                AlarmManager.INTERVAL_DAY, AlarmManager.INTERVAL_DAY,
                 updateCheckIntent);
 
         Date nextCheckDate = new Date(System.currentTimeMillis() +
-                Utils.getUpdateCheckInterval(context));
+                AlarmManager.INTERVAL_DAY);
         Log.d(TAG, "Setting automatic updates check: " + nextCheckDate);
     }
 
