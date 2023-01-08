@@ -124,7 +124,15 @@ public class Page {
                                 hexColor = String.format("; color: #%02x%02x%02x", colorTextR, colorTextG, colorTextB);
                             }
 
-                            String html = "<html><head><style>body { font-size: light" + hexColor + "; }</style></head><body>" + htmlContent + "</body></html>";
+                            String html = "<html><head><style>body { " +
+                                    "font-size: light" + hexColor + "; " +
+                                    "display:inline; " +
+                                    "padding:0px; " +
+                                    "margin:0px; " +
+                                    "letter-spacing: -0.02; " +
+                                    "font-size: 17px; " +
+                                    "line-height: 1.5; }" +
+                                    "</style></head><body>" + htmlContent + "</body></html>";
                             if (!html.equals(mContext.htmlContentLast)) {
                                 mContext.htmlContentLast = html;
                                 //Log.d(UpdatesActivity.TAG, "Last HTML didn't match, using new HTML: " + mContext.htmlContentLast);

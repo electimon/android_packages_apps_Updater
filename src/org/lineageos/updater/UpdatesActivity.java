@@ -218,7 +218,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
         //Prepare the environment before processing
         htmlColor = this.getResources().getColor(R.color.theme_accent3, this.getTheme());
-        htmlCurrentBuild = String.format("<p style=\"letter-spacing: -0.02; font-size: 17px; line-height: 1.5;\"> %s<br />%s<br />%s </p>",
+        htmlCurrentBuild = String.format("<p> %s<br />%s<br />%s </p>",
                 getString(R.string.header_android_version, Build.VERSION.RELEASE),
                 getString(R.string.header_build_security_patch, BuildInfoUtils.getBuildSecurityPatchTimestamp()),
                 getString(R.string.header_build_date, StringGenerator.getDateLocalizedUTC(this,
