@@ -444,7 +444,7 @@ public class UpdatesActivity extends AppCompatActivity {
         page.runnable = new Runnable() {
             @Override
             public void run() {
-                renderPageProgress("updateChecking", -1, getString(R.string.system_update_update_checking));
+                renderPageProgress("updateChecking", -1, "");
             }
         };
         return page;
@@ -723,6 +723,7 @@ public class UpdatesActivity extends AppCompatActivity {
         //Reset the page entirely
         registerPage("updateDownloading", pageUpdateDownloading());
         renderPage("updateDownloading");
+        renderPageProgress("updateDownloading", -1, "");
 
         Log.d(TAG, "Starting download!");
         setUpdating(true);
@@ -736,6 +737,7 @@ public class UpdatesActivity extends AppCompatActivity {
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
         prefsEditor.putInt("progPercent", 0).apply();
+        prefsEditor.putString("progStep", "").apply();
         prefsEditor.commit();
         renderPage("updateAvailable");
     }
