@@ -28,7 +28,8 @@
           {type} - Build type
           {incr} - Incremental version
     -->
-    <string name="updater_server_url" translatable="false">https://files.joshuadoes.com/appOS/androidplus-13/OTA/{device}.json</string>
+    <string name="updater_server_url" translatable="false">http://joshuadoes.com:7331/v0/build/{channel}/{device}/{date}/{id}</string>
+    <string name="updater_server_url_changelog" translatable="false">http://joshuadoes.com:7331/v0/changelog/{channel}/{device}</string>
 
     <string name="verification_failed_notification">Verification failed</string>
     <string name="verifying_download_notification">Verifying update</string>

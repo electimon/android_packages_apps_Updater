@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -645,8 +646,21 @@ public class UpdatesActivity extends AppCompatActivity {
             }
 
             if (!Objects.equals(updateId, "") && update != null && BuildInfoUtils.getBuildDateTimestamp() < update.getTimestamp()) {
-                //fake the changelog for now
-                htmlChangelog = LoadAssetData("changelog.html");
+                try {
+                    String urlCL = Utils.getChangelogURL(this);
+                    URL url = new URL(urlCL);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+                    String input;
+                    StringBuffer stringBuffer = new StringBuffer();
+                    while ((input = in.readLine()) != null)
+                        stringBuffer.append(input);
+                    in.close();
+                    htmlChangelog = stringBuffer.toString();
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to get changelog!");
+                    htmlChangelog = "";
+                }
+
                 htmlChangelog += "<br /><br />";
                 htmlChangelog += "Update size: " + Formatter.formatShortFileSize(activity, update.getFileSize());
 

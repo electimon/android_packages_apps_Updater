@@ -153,6 +153,20 @@ public class Utils {
         return updates;
     }
 
+    public static String getChangelogURL(Context context) {
+        String device = SystemProperties.get(Constants.PROP_NEXT_DEVICE,
+                SystemProperties.get(Constants.PROP_DEVICE));
+        String channel = SystemProperties.get(Constants.PROP_RELEASE_TYPE).toLowerCase(Locale.ROOT);
+
+        String changelogUrl = SystemProperties.get(Constants.PROP_UPDATER_URI_CHANGELOG);
+        if (changelogUrl.trim().isEmpty()) {
+            changelogUrl = context.getString(R.string.updater_server_url_changelog);
+        }
+
+        return changelogUrl.replace("{device}", device)
+                .replace("{channel}", channel);
+    }
+
     public static String getServerURL(Context context) {
         String incrementalVersion = SystemProperties.get(Constants.PROP_BUILD_VERSION_INCREMENTAL);
         String device = SystemProperties.get(Constants.PROP_NEXT_DEVICE,
