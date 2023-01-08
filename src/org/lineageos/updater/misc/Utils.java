@@ -154,9 +154,16 @@ public class Utils {
     }
 
     public static String getChangelogURL(Context context) {
+        String incrementalVersion = SystemProperties.get(Constants.PROP_BUILD_VERSION_INCREMENTAL);
         String device = SystemProperties.get(Constants.PROP_NEXT_DEVICE,
                 SystemProperties.get(Constants.PROP_DEVICE));
         String channel = SystemProperties.get(Constants.PROP_RELEASE_TYPE).toLowerCase(Locale.ROOT);
+        String date = SystemProperties.get(Constants.PROP_BUILD_DATE);
+        @SuppressLint("HardwareIds") String id = android.provider.Settings.Secure.getString(
+                context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+
+        if (PreferenceManager.getDefaultSharedPreferences(context).getInt("easterEgg", 0) != 7)
+            id = "redacted";
 
         String changelogUrl = SystemProperties.get(Constants.PROP_UPDATER_URI_CHANGELOG);
         if (changelogUrl.trim().isEmpty()) {
@@ -164,7 +171,10 @@ public class Utils {
         }
 
         return changelogUrl.replace("{device}", device)
-                .replace("{channel}", channel);
+                .replace("{channel}", channel)
+                .replace("{date}", date)
+                .replace("{id}", id)
+                .replace("{incr}", incrementalVersion);
     }
 
     public static String getServerURL(Context context) {
