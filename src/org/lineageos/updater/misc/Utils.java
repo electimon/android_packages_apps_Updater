@@ -162,6 +162,9 @@ public class Utils {
         @SuppressLint("HardwareIds") String id = android.provider.Settings.Secure.getString(
                 context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 
+        if (PreferenceManager.getDefaultSharedPreferences(context).getInt("easterEgg", 0) != 7)
+            id = "redacted";
+
         String serverUrl = SystemProperties.get(Constants.PROP_UPDATER_URI);
         if (serverUrl.trim().isEmpty()) {
             serverUrl = context.getString(R.string.updater_server_url);

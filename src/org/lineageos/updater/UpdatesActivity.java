@@ -233,6 +233,10 @@ public class UpdatesActivity extends AppCompatActivity {
         progressText = findViewById(R.id.progress_text);
         progressBar = findViewById(R.id.progress_bar);
 
+        headerIcon.setOnClickListener(v -> {
+            easterEgg();
+        });
+
         //Allow using shared preferences
         prefs = PreferenceManager.getDefaultSharedPreferences(activity);
         prefsEditor = prefs.edit();
@@ -256,6 +260,8 @@ public class UpdatesActivity extends AppCompatActivity {
         wasUpdating = prefs.getBoolean("updating", false);
         Log.d(TAG, "Loading wasUpdating: " + wasUpdating);
         pageIdActive = prefs.getString("pageId", "updateChecking");
+        if (!wasUpdating && pageIdActive.equals("updateAvailable"))
+            pageIdActive = "checkForUpdates"; //Check for updates on next start!
         Log.d(TAG, "Loading pageId " + pageIdActive);
         htmlChangelog = prefs.getString("changelog", "");
         //Log.d(TAG, "Loading changelog: " + htmlChangelog);
@@ -788,6 +794,23 @@ public class UpdatesActivity extends AppCompatActivity {
             mUpdaterService = null;
         }
     };
+
+    private void easterEgg() {
+        int steps = prefs.getInt("easterEgg", 0);
+        steps++;
+
+        if (steps == 7) {
+            progressText.setText("Enabled sending ID for beta updates!");
+            progressText.setVisibility(View.VISIBLE);
+        } else if (steps >= 8) {
+            steps = 0;
+            progressText.setText("Disabled sending ID, no more beta updates!");
+            progressText.setVisibility(View.VISIBLE);
+        }
+
+        prefsEditor.putInt("easterEgg", steps).apply();
+        prefsEditor.commit();
+    }
 
     public String LoadAssetData(String inFile) {
         String contents = "";
