@@ -26,7 +26,9 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.SystemProperties;
 import android.os.storage.StorageManager;
+import android.provider.Settings;
 import android.util.Log;
+import android.util.proto.ProtoParseException;
 import android.widget.Toast;
 
 import androidx.preference.PreferenceManager;
@@ -40,6 +42,7 @@ import org.lineageos.updater.controller.UpdaterService;
 import org.lineageos.updater.model.Update;
 import org.lineageos.updater.model.UpdateBaseInfo;
 import org.lineageos.updater.model.UpdateInfo;
+import org.lineageos.updater.protos.Build;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -80,6 +83,18 @@ public class Utils {
         update.setFileSize(object.getLong("size"));
         update.setDownloadUrl(object.getString("url"));
         update.setVersion(object.getString("version"));
+        return update;
+    }
+
+    public static UpdateInfo parseProtoUpdate(Build build) {
+        Update update = new Update();
+        update.setTimestamp(build.getCreated());
+        update.setName(build.getName());
+        update.setDownloadId(build.getSha256());
+        update.setType(build.getChannel());
+        update.setFileSize(build.getSize());
+        update.setDownloadUrl(build.getUrl());
+        update.setVersion(build.getVersion());
         return update;
     }
 
@@ -141,7 +156,9 @@ public class Utils {
         String incrementalVersion = SystemProperties.get(Constants.PROP_BUILD_VERSION_INCREMENTAL);
         String device = SystemProperties.get(Constants.PROP_NEXT_DEVICE,
                 SystemProperties.get(Constants.PROP_DEVICE));
-        String type = SystemProperties.get(Constants.PROP_RELEASE_TYPE).toLowerCase(Locale.ROOT);
+        String channel = SystemProperties.get(Constants.PROP_RELEASE_TYPE).toLowerCase(Locale.ROOT);
+        String date = SystemProperties.get(Constants.PROP_BUILD_DATE);
+        String id = Settings.Secure.ANDROID_ID;
 
         String serverUrl = SystemProperties.get(Constants.PROP_UPDATER_URI);
         if (serverUrl.trim().isEmpty()) {
@@ -149,7 +166,9 @@ public class Utils {
         }
 
         return serverUrl.replace("{device}", device)
-                .replace("{type}", type)
+                .replace("{channel}", channel)
+                .replace("{date}", date)
+                .replace("{id}", id)
                 .replace("{incr}", incrementalVersion);
     }
 

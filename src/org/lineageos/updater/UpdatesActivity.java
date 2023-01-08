@@ -19,6 +19,7 @@ import android.os.StrictMode;
 import android.os.UpdateEngine;
 import android.os.UpdateEngineCallback;
 import android.text.format.Formatter;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
@@ -31,6 +32,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.lineageos.updater.controller.UpdaterController;
@@ -38,11 +41,15 @@ import org.lineageos.updater.controller.UpdaterService;
 import org.lineageos.updater.misc.BuildInfoUtils;
 import org.lineageos.updater.misc.StringGenerator;
 import org.lineageos.updater.misc.Utils;
+import org.lineageos.updater.model.Update;
+import org.lineageos.updater.model.UpdateBaseInfo;
 import org.lineageos.updater.model.UpdateInfo;
 import org.lineageos.updater.model.UpdateStatus;
+import org.lineageos.updater.protos.BuildProtos;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,6 +88,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
     //Special details
     private UpdateInfo update;
+    private org.lineageos.updater.protos.Build build;
     private String updateId = "";
     private Boolean wasUpdating = false;
     private Boolean updateCheck = false;
@@ -230,19 +238,20 @@ public class UpdatesActivity extends AppCompatActivity {
         prefsEditor = prefs.edit();
 
         //Load shared preferences
-        String updateJSON = prefs.getString("update", "");
-        if (!updateJSON.equals("")) {
-            try {
-                JSONObject obj = new JSONObject(updateJSON);
-                if (!obj.isNull("version")) {
-                    update = Utils.parseJsonUpdate(obj);
+        if (update == null) {
+            String buildB64 = prefs.getString("update", "");
+            if (!buildB64.equals("")) {
+                try {
+                    byte[] buildBytes = Base64.decode(buildB64, Base64.DEFAULT);
+                    build = org.lineageos.updater.protos.Build.parseFrom(buildBytes);
+                    update = Utils.parseProtoUpdate(build);
                     updateId = update.getDownloadId();
+                } catch (InvalidProtocolBufferException e) {
+                    Log.e(TAG, "Failed to load saved update from prefs", e);
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } else {
+                Log.d(TAG, "No saved update found");
             }
-        } else {
-            Log.d(TAG, "No saved update found");
         }
         wasUpdating = prefs.getBoolean("updating", false);
         Log.d(TAG, "Loading wasUpdating: " + wasUpdating);
@@ -582,41 +591,41 @@ public class UpdatesActivity extends AppCompatActivity {
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 
                 InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"), 8);
-                String jsonOTA = "";
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    jsonOTA += line + "\n";
-                }
-
-                JSONObject obj = new JSONObject(jsonOTA);
-                if (obj.isNull("version")) {
-                    Log.d(TAG, "Failed to find version in updates JSON");
+                byte[] buildBytes = in.readAllBytes();
+                build = org.lineageos.updater.protos.Build.parseFrom(buildBytes);
+                if (Objects.equals(build.getVersion(), "")) {
+                    Log.d(TAG, "Failed to find version in updates proto");
+                    renderPage("checkForUpdates");
                     return;
                 }
 
                 try {
-                    File oldFile = update.getFile();
-                    if (oldFile != null)
-                        oldFile.delete();
+                    if (update != null) {
+                        File oldFile = update.getFile();
+                        if (oldFile != null) {
+                            oldFile.delete();
+                        }
+                    }
 
-                    update = Utils.parseJsonUpdate(obj);
+                    update = Utils.parseProtoUpdate(build);
                     updateId = update.getDownloadId();
-                    mUpdaterController.addUpdate(update);
 
-                    List<String> updatesOnline = new ArrayList<>();
-                    updatesOnline.add(update.getDownloadId());
-                    mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+                    if (mUpdaterController != null) {
+                        mUpdaterController.addUpdate(update);
+                        List<String> updatesOnline = new ArrayList<>();
+                        updatesOnline.add(update.getDownloadId());
+                        mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+                    }
 
                     Log.d(TAG, "Saving update for " + updateId);
-                    prefsEditor.putString("update", jsonOTA).apply();
+                    prefsEditor.putString("update", Base64.encodeToString(buildBytes, Base64.DEFAULT)).apply();
                     prefsEditor.commit();
                 } catch (Exception e) {
-                    Log.e(TAG, "Error while parsing updates JSON: " + e);
+                    Log.e(TAG, "Error while parsing updates proto: " + e);
                     exception = e;
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error while downloading updates JSON: " + e);
+                Log.e(TAG, "Error while downloading updates proto: " + e);
                 exception = e;
             }
 
@@ -758,14 +767,11 @@ public class UpdatesActivity extends AppCompatActivity {
             mUpdaterService = binder.getService();
             mUpdaterController = mUpdaterService.getUpdaterController();
 
-            if (update != null) {
-                Log.d(TAG, "Found update: " + update.getDownloadId());
-                    Log.d(TAG, "Adding missing update: " + update.getDownloadId());
-                    mUpdaterController.addUpdate(update);
-
-                    List<String> updatesOnline = new ArrayList<>();
-                    updatesOnline.add(update.getDownloadId());
-                    mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
+            if (mUpdaterController != null) {
+                mUpdaterController.addUpdate(update);
+                List<String> updatesOnline = new ArrayList<>();
+                updatesOnline.add(update.getDownloadId());
+                mUpdaterController.setUpdatesAvailableOnline(updatesOnline, true);
             }
 
             if (pageIdActive.equals("updateChecking")) {

@@ -29,6 +29,7 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:7.3.1'
+        classpath "com.google.protobuf:protobuf-gradle-plugin:0.9.1"
     }
 }
 
@@ -37,21 +38,48 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 apply plugin: 'com.android.application'
+apply plugin: "com.google.protobuf"
+
+protobuf {
+    protoc {
+        // You still need protoc like in the non-Android case
+        artifact = 'com.google.protobuf:protoc:3.0.0'
+    }
+    plugins {
+        javalite {
+            // The codegen for lite comes as a separate artifact
+            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
+        }
+    }
+    generateProtoTasks.generatedFilesBaseDir = 'gen-src'
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                // In most cases you don't need the full Java output
+                // if you use the lite output.
+                remove java
+            }
+            task.plugins {
+                javalite { }
+            }
+        }
+    }
+}
 
 android {
     compileSdkVersion 33
 
     defaultConfig {
-        minSdkVersion 31
+        minSdkVersion 33
         targetSdkVersion 33
     }
-
 
     sourceSets {
         main {
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
-            java.srcDirs = ['src']
+            java.srcDirs = ['src', 'gen-src']
+            proto.srcDirs = ['src']
             manifest.srcFile 'AndroidManifest.xml'
         }
     }
@@ -86,4 +114,5 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.preference:preference:1.1.0'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'com.google.protobuf:protobuf-lite:3.0.0'
 }
