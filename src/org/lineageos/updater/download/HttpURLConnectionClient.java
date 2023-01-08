@@ -88,6 +88,7 @@ public class HttpURLConnectionClient implements DownloadClient {
             Log.e(TAG, "Not downloading");
             return;
         }
+        mDownloadThread.mCancelled = true;
         mDownloadThread.interrupt();
         mDownloadThread = null;
     }
@@ -109,6 +110,8 @@ public class HttpURLConnectionClient implements DownloadClient {
         }
 
         mDownloadThread = new DownloadThread(resume);
+        if (resume)
+            mDownloadThread.interrupt();
         mDownloadThread.start();
     }
 
@@ -135,6 +138,7 @@ public class HttpURLConnectionClient implements DownloadClient {
         private long mEta = -1;
 
         private final boolean mResume;
+        private boolean mCancelled;
 
         private DownloadThread(boolean resume) {
             mResume = resume;
@@ -250,6 +254,8 @@ public class HttpURLConnectionClient implements DownloadClient {
                             Log.e(TAG, "Using duplicate link " + link.mUrl, e);
                         }
                     } else {
+                        if (mDownloadThread == null || mDownloadThread.mCancelled)
+                            return;
                         throw e;
                     }
                 }
@@ -311,6 +317,8 @@ public class HttpURLConnectionClient implements DownloadClient {
                     }
                 }
             } catch (IOException e) {
+                if (mDownloadThread == null || mDownloadThread.mCancelled)
+                    return;
                 Log.e(TAG, "Error downloading file", e);
                 mCallback.onFailure(isInterrupted());
             } finally {

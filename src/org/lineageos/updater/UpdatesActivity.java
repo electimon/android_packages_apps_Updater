@@ -251,6 +251,8 @@ public class UpdatesActivity extends AppCompatActivity {
         //Import and fill in the pages for the first time
         registerPages();
 
+        //Note that, regardless of whether the activity is open, these callbacks will still execute!
+        //That means we still update pages in the background based on the update's progress
         mUpdateEngineCallback = new UpdateEngineCallback() {
             @Override
             public void onPayloadApplicationComplete(int errorCode) {
@@ -519,6 +521,8 @@ public class UpdatesActivity extends AppCompatActivity {
             public void run() {
                 Log.d(TAG, "Clearing pageId now that update is installed");
                 prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
+                prefsEditor.clear().commit(); //Clear the preferences of everything for now, not needed for single builds
+                //TODO: For multi-build support where user selects build, remove just that build from prefs
             }
         };
         page.icon = R.drawable.ic_google_system_update;
@@ -638,8 +642,6 @@ public class UpdatesActivity extends AppCompatActivity {
         Log.d(TAG, "Starting download!");
         setUpdating(true);
 
-        mUpdaterController.pauseDownload(updateId);
-        mUpdaterController.deleteUpdate(updateId);
         mUpdaterController.startDownload(updateId);
 
         Page page = getPage("updateDownloading");
