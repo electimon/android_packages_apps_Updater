@@ -684,11 +684,6 @@ public class UpdatesActivity extends AppCompatActivity {
     }
 
     private void download() {
-        if (wasUpdating) {
-            Log.e(TAG, "Tried to call download when update is already under way");
-            return;
-        }
-
         //Reset the page entirely
         registerPage("updateDownloading", pageUpdateDownloading());
         renderPage("updateDownloading");
@@ -704,6 +699,8 @@ public class UpdatesActivity extends AppCompatActivity {
         setUpdating(true);
         mUpdaterController.pauseDownload(updateId);
         mUpdaterController.deleteUpdate(updateId);
+        prefsEditor.putInt("progPercent", 0).apply();
+        prefsEditor.commit();
         renderPage("updateAvailable");
     }
 
