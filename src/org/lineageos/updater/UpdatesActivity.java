@@ -152,6 +152,7 @@ public class UpdatesActivity extends AppCompatActivity {
         if (!Objects.equals(pageIdActive, "error")) {
             //Log.d(TAG, "Saving pageId " + pageIdActive);
             prefsEditor.putString("pageId", pageIdActive).apply();
+            prefsEditor.commit();
         }
 
         page.render(this);
@@ -168,6 +169,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
         prefsEditor.putInt("progPercent", page.progPercent);
         prefsEditor.putString("progStep", page.progStep);
+        prefsEditor.commit();
 
         renderPage(pageId);
     }
@@ -527,7 +529,6 @@ public class UpdatesActivity extends AppCompatActivity {
             @Override
             public void run() {
                 Log.d(TAG, "Clearing pageId now that update is installed");
-                prefsEditor.putString("pageId", ""); //Clear the current page from prefs so we don't return here after reboot
                 prefsEditor.clear().commit(); //Clear the preferences of everything for now, not needed for single builds
                 //TODO: For multi-build support where user selects build, remove just that build from prefs
             }
@@ -609,6 +610,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
                     Log.d(TAG, "Saving update for " + updateId);
                     prefsEditor.putString("update", jsonOTA).apply();
+                    prefsEditor.commit();
                 } catch (Exception e) {
                     Log.e(TAG, "Error while parsing updates JSON: " + e);
                     exception = e;
@@ -635,6 +637,7 @@ public class UpdatesActivity extends AppCompatActivity {
 
                 Log.d(TAG, "Saving changelog");
                 prefsEditor.putString("changelog", htmlChangelog).apply();
+                prefsEditor.commit();
                 registerPages(); //Reload everything that might display the changelog
 
                 renderPage("updateAvailable");
@@ -713,8 +716,9 @@ public class UpdatesActivity extends AppCompatActivity {
 
     private void setUpdating(Boolean updating) {
         wasUpdating = updating;
-        Log.d(TAG, "True or false, we are now updating: " + updating);
+        Log.d(TAG, "Set updating: " + updating);
         prefsEditor.putBoolean("updating", updating).apply();
+        prefsEditor.commit();
     }
 
     @Override
