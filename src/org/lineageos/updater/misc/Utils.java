@@ -15,6 +15,7 @@
  */
 package org.lineageos.updater.misc;
 
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -158,7 +159,8 @@ public class Utils {
                 SystemProperties.get(Constants.PROP_DEVICE));
         String channel = SystemProperties.get(Constants.PROP_RELEASE_TYPE).toLowerCase(Locale.ROOT);
         String date = SystemProperties.get(Constants.PROP_BUILD_DATE);
-        String id = Settings.Secure.ANDROID_ID;
+        @SuppressLint("HardwareIds") String id = android.provider.Settings.Secure.getString(
+                context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 
         String serverUrl = SystemProperties.get(Constants.PROP_UPDATER_URI);
         if (serverUrl.trim().isEmpty()) {

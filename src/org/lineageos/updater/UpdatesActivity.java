@@ -767,7 +767,7 @@ public class UpdatesActivity extends AppCompatActivity {
             mUpdaterService = binder.getService();
             mUpdaterController = mUpdaterService.getUpdaterController();
 
-            if (mUpdaterController != null) {
+            if (mUpdaterController != null && update != null) {
                 mUpdaterController.addUpdate(update);
                 List<String> updatesOnline = new ArrayList<>();
                 updatesOnline.add(update.getDownloadId());
