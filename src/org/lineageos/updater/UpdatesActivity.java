@@ -431,6 +431,7 @@ public class UpdatesActivity extends AppCompatActivity {
         Page page = new Page();
         page.icon = R.drawable.ic_google_system_update;
         page.strStatus = getString(R.string.system_update_update_checking);
+        page.htmlContent = LoadAssetData("loading.html");
         return page;
     }
 
